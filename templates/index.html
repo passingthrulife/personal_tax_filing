@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aatmanirbhar Tax - Personal ITR-2 Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #080914;
+            --bg-card: rgba(17, 19, 43, 0.55);
+            --bg-card-hover: rgba(25, 28, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-color-focus: rgba(99, 102, 241, 0.4);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.15);
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --glow-color: rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            line-height: 1.5;
+            overflow-x: auto;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(8, 9, 20, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 2rem;
+            height: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #fff;
+            box-shadow: 0 0 15px var(--glow-color);
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #ffffff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge-regime {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid var(--primary);
+            color: #a5b4fc;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar config styling */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(8, 9, 20, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .form-control-file {
+            width: 100%;
+            background: rgba(8, 9, 20, 0.4);
+            border: 1px dashed var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .form-control-file:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .is-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .file-status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .file-status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .file-status-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-name {
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-found {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-missing {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        /* Main Workspace Styling */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Regime Comparison Banner */
+        .regime-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .regime-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .regime-card.recommended {
+            border-color: var(--success);
+            background: linear-gradient(185deg, rgba(16, 185, 129, 0.04) 0%, rgba(17, 19, 43, 0.55) 100%);
+            box-shadow: 0 4px 25px rgba(16, 185, 129, 0.05);
+        }
+
+        .recommended-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--success);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.25rem 0.75rem;
+            border-bottom-left-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .regime-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .regime-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .regime-tax-large {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin: 0.5rem 0;
+            background: linear-gradient(to right, #ffffff, #d1d5db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .recommended .regime-tax-large {
+            background: linear-gradient(to right, #ffffff, #a7f3d0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .regime-savings {
+            font-size: 0.85rem;
+            color: var(--success);
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .regime-metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .regime-metric-val {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Tabs and Tables */
+        .tab-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .tab-headers {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-headers::-webkit-scrollbar {
+            height: 6px;
+            display: block !important;
+        }
+
+        .tab-headers::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 3px;
+        }
+
+        .tab-headers::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.05);
+        }
+
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Grid data lists */
+        .tax-table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-header-bar {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .table-rows {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.15s ease;
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .table-row:hover {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .row-label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .label-main {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .label-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .row-value-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .row-val {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            font-family: monospace;
+        }
+
+        /* Copy Button styling */
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.35rem 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-copy:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .btn-copy.copied {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            color: #34d399;
+        }
+
+        /* Textarea / copyable code output */
+        .code-output-card {
+            background: #04050b;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .code-output-card pre {
+            font-family: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.8rem;
+            color: #34d399;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Alert notifications */
+        .alert-box {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+
+        .alert-warning-title {
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .warning-list {
+            padding-left: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        /* Data grids */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-mini-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .mini-card-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .mini-card-val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: #fff;
+        }
+
+        /* Transactions tables */
+        .data-table-container {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            text-align: left;
+        }
+
+        .data-table th {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .type-pill {
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .type-ltcg {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .type-stcg {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .step-instruction {
+            margin: 1.5rem 0 1rem 0;
+            font-size: 0.85rem;
+            background: rgba(99, 102, 241, 0.06);
+            border-left: 3px solid var(--primary);
+            padding: 0.75rem 1rem;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .step-instruction p {
+            color: #a5b4fc;
+            font-weight: 600;
+        }
+
+        /* Screen overlays */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(8, 9, 20, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .spinner {
+            width: 3.5rem;
+            height: 3.5rem;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            background: linear-gradient(to right, #ffffff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <div class="logo-icon">🇮🇳</div>
+            <div>
+                <div class="logo-text">Aatmanirbhar Tax</div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Personal ITR-2 Calculator</div>
+            </div>
+        </div>
+        <div id="active-fy-badge" class="badge-regime">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            <span>FY 2025-26</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Configuration & inputs sidebar -->
+        <div class="sidebar">
+            <div class="card">
+                <div class="card-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Settings & Keys
+                </div>
+                <div class="form-group">
+                    <label for="pan">PAN Card Number <span style="color: #ef4444; font-weight: bold;">*</span></label>
+                    <input type="text" id="pan" class="form-control" placeholder="ABCDE1234F" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth (DDMMYYYY) <span style="color: #ef4444; font-weight: bold;">*</span></label>
+                    <input type="text" id="dob" class="form-control" placeholder="31121990">
+                </div>
+                <div class="form-group">
+                    <label for="form16_password">Form 16 Password (Optional)</label>
+                    <input type="password" id="form16_password" class="form-control" placeholder="Only if custom password">
+                </div>
+                <div class="form-group">
+                    <label for="fy">Financial Year</label>
+                    <select id="fy" class="form-control">
+                        <option value="2025-26" selected>FY 2025-26 (AY 2026-27)</option>
+                        <option value="2024-25">FY 2024-25 (AY 2025-26)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Document Uploads
+                </div>
+                <div class="form-group">
+                    <label for="file_form16">Form 16 PDF</label>
+                    <input type="file" id="file_form16" class="form-control-file" accept=".pdf">
+                </div>
+                <div class="form-group">
+                    <label for="file_ais_tis">AIS / TIS PDF</label>
+                    <input type="file" id="file_ais_tis" class="form-control-file" accept=".pdf">
+                </div>
+                <div class="form-group">
+                    <label for="file_indian_stock">Indian Stock Sales CSV</label>
+                    <input type="file" id="file_indian_stock" class="form-control-file" accept=".csv">
+                </div>
+                <div class="form-group">
+                    <label for="file_us_stock">US Stock Sales CSV</label>
+                    <input type="file" id="file_us_stock" class="form-control-file" accept=".csv">
+                </div>
+                <div class="form-group">
+                    <label for="file_us_1042s">US Form 1042-S PDFs</label>
+                    <input type="file" id="file_us_1042s" class="form-control-file" accept=".pdf" multiple>
+                    <small style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 0.2rem; display: block;">Supports selecting multiple 1042-S PDFs</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Deduction Manual Entry
+                </div>
+                <div class="form-group">
+                    <label for="home_loan_interest">HL Interest u/s 24b</label>
+                    <input type="number" id="home_loan_interest" class="form-control" placeholder="e.g. 185000">
+                </div>
+                <div class="form-group">
+                    <label for="home_loan_principal">HL Principal u/s 80C</label>
+                    <input type="number" id="home_loan_principal" class="form-control" placeholder="e.g. 80000">
+                </div>
+                <div class="form-group">
+                    <label for="custom_80c">Additional 80C (PPF/ELSS)</label>
+                    <input type="number" id="custom_80c" class="form-control" placeholder="e.g. 50000">
+                </div>
+                <div class="form-group">
+                    <label for="custom_80d">Health Insurance u/s 80D</label>
+                    <input type="number" id="custom_80d" class="form-control" placeholder="e.g. 15000">
+                </div>
+                <div class="form-group">
+                    <label for="advance_tax">Advance Tax Paid</label>
+                    <input type="number" id="advance_tax" class="form-control" placeholder="e.g. 50000">
+                </div>
+
+                <button id="btn-process" class="btn-submit" style="margin-top: 1.5rem;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77m-13.67 13.67l3.77-3.77m0 0l1.6 1.6a1 1 0 001.4 0l3.77-3.77m-14.84-5.67a10 10 0 1114.14 14.14L3 21h4.24"/></svg>
+                    Process Tax Data
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    File Status
+                </div>
+                <div id="file-status-container" class="file-status-list">
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); text-align: center; padding: 1rem 0;">
+                        No files checked yet. Enter keys and process.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main workspace dashboard area -->
+        <div class="main-content">
+            <!-- Warnings Box -->
+            <div id="warnings-container" style="display: none;"></div>
+
+            <!-- Side-by-side Regime Comparison -->
+            <div id="regime-comparison-container" class="regime-comparison" style="display: none;">
+                <!-- New Regime Card -->
+                <div id="card-new-regime" class="regime-card">
+                    <div class="regime-header">
+                        <span class="regime-name">New Tax Regime</span>
+                        <span id="new-regime-rec-badge" class="badge-regime" style="display: none;">Recommended</span>
+                    </div>
+                    <div>
+                        <div class="regime-tax-large" id="new-tax-payable">₹0</div>
+                        <div class="regime-savings" id="new-regime-savings">Saves ₹0</div>
+                    </div>
+                    <div style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
+                        <div class="regime-metric-row">
+                            <span>Taxable Slab Income</span>
+                            <span class="regime-metric-val" id="new-slab-income">₹0</span>
+                        </div>
+                        <div class="regime-metric-row">
+                            <span>Special CG Income</span>
+                            <span class="regime-metric-val" id="new-cg-income">₹0</span>
+                        </div>
+                        <div class="regime-metric-row">
+                            <span>Balance Due/Refund</span>
+                            <span class="regime-metric-val" id="new-due-refund">₹0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Old Regime Card -->
+                <div id="card-old-regime" class="regime-card">
+                    <div class="regime-header">
+                        <span class="regime-name">Old Tax Regime</span>
+                        <span id="old-regime-rec-badge" class="badge-regime" style="display: none;">Recommended</span>
+                    </div>
+                    <div>
+                        <div class="regime-tax-large" id="old-tax-payable">₹0</div>
+                        <div class="regime-savings" id="old-regime-savings">Saves ₹0</div>
+                    </div>
+                    <div style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
+                        <div class="regime-metric-row">
+                            <span>Taxable Slab Income</span>
+                            <span class="regime-metric-val" id="old-slab-income">₹0</span>
+                        </div>
+                        <div class="regime-metric-row">
+                            <span>Special CG Income</span>
+                            <span class="regime-metric-val" id="old-cg-income">₹0</span>
+                        </div>
+                        <div class="regime-metric-row">
+                            <span>Balance Due/Refund</span>
+                            <span class="regime-metric-val" id="old-due-refund">₹0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation & Output Screens -->
+            <div id="tabs-container" class="tab-container" style="display: none;">
+                <div class="tab-headers">
+                    <button class="tab-btn active" onclick="switchTab('tab-overview')">Overview & Slabs</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-s')">Schedule S (Salary)</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-hp')">Schedule HP (Home Loan)</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-cg')">Schedule CG (Gains)</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-os')">Schedule OS (Other)</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-via')">Schedule VIA (Deductions)</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-fa')">Schedule FA (Foreign)</button>
+                    <button class="tab-btn" onclick="switchTab('tab-form-67')">Form 67 & Relief</button>
+                </div>
+
+                <!-- Tab: Overview -->
+                <div id="tab-overview" class="tab-panel active">
+                    <!-- Regime Selection Recommendation Callout -->
+                    <div id="recommendation-callout" class="card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%); border: 1px solid var(--success); margin-bottom: 1.5rem; display: none;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-size: 2rem;">💡</div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem;">Regime Selection Recommendation</h3>
+                                <p id="recommendation-text" style="font-size: 0.9rem; color: #a7f3d0; font-weight: 500;"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid-3">
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">Gross Income</div>
+                            <div class="mini-card-val" id="ov-gross-income">₹0</div>
+                        </div>
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">Total Deductions</div>
+                            <div class="mini-card-val" id="ov-deductions">₹0</div>
+                        </div>
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">Net Tax Payable</div>
+                            <div class="mini-card-val" id="ov-tax-payable">₹0</div>
+                        </div>
+                    </div>
+
+                    <!-- Side-by-Side Regime Comparison Table -->
+                    <div class="tax-table-card" style="margin-bottom: 1.5rem;">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Detailed Side-by-Side Regime Comparison</span>
+                        </div>
+                        <div class="data-table-container">
+                            <table class="data-table" style="table-layout: fixed;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%;">Income Component / Tax Particulars</th>
+                                        <th style="text-align: right; width: 30%;">Old Regime</th>
+                                        <th style="text-align: right; width: 30%;">New Regime</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparison-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tax-table-card">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Active Regime Slab Taxation Breakdown</span>
+                            <span id="active-regime-indicator" class="badge-regime">New Regime</span>
+                        </div>
+                        <div class="table-rows" id="slab-breakdown-rows">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule S -->
+                <div id="tab-schedule-s" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>Fill out the fields in Schedule Salary (Schedule S) in the e-filing website exactly as shown below.</p>
+                    </div>
+                    <div class="tax-table-card">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Schedule S - Salary Income details</span>
+                        </div>
+                        <div class="table-rows">
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Gross Salary (Section 17(1) + 17(2) + 17(3))</span>
+                                    <span class="label-sub">Total gross salary received from all employers</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-gross-salary">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-gross-salary')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Salary under Section 17(1)</span>
+                                    <span class="label-sub">Basic pay, bonus, allowances, etc.</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-salary-17-1">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-salary-17-1')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Value of Perquisites under Section 17(2)</span>
+                                    <span class="label-sub">Includes quarterly vested RSU value per Form 16</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-perquisites-17-2">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-perquisites-17-2')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Profits in lieu of salary under Section 17(3)</span>
+                                    <span class="label-sub">Any additional profits</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-profits-17-3">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-profits-17-3')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Exempt Allowances under Section 10</span>
+                                    <span class="label-sub">HRA, LTA, or other exemptions (Nil in New Regime)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-exempt-10">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-exempt-10')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Standard Deduction under Section 16(ia)</span>
+                                    <span class="label-sub">Deduction based on active regime</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-std-ded">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-std-ded')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Professional Tax under Section 16(ii)</span>
+                                    <span class="label-sub">Deducted from salary (Nil in New Regime)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-prof-tax">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-prof-tax')">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule HP -->
+                <div id="tab-schedule-hp" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>Deduction for Home Loan interest (Section 24(b)). Note: Self-occupied house property loss cannot be set off under the New Regime.</p>
+                    </div>
+                    <div class="tax-table-card">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Schedule HP - Income/Loss from House Property</span>
+                        </div>
+                        <div class="table-rows">
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Interest Payable on Borrowed Capital (Section 24(b))</span>
+                                    <span class="label-sub">Interest on Home Loan (Capped at ₹2,00,000 for self-occupied under Old Regime)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="hp-interest">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('hp-interest')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Net Income/Loss from House Property</span>
+                                    <span class="label-sub">Amount that will set-off against total income</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="hp-net-loss">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('hp-net-loss')">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule CG -->
+                <div id="tab-schedule-cg" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>Capital gains results split by sections. Input under Schedule CG on e-filing portal.</p>
+                    </div>
+                    <div class="grid-3">
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">Indian Equity LTCG (112A)</div>
+                            <div class="mini-card-val" id="cg-ltcg-listed">₹0</div>
+                        </div>
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">Indian Equity STCG (111A)</div>
+                            <div class="mini-card-val" id="cg-stcg-listed">₹0</div>
+                        </div>
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">US/Foreign Stock LTCG (112)</div>
+                            <div class="mini-card-val" id="cg-ltcg-unlisted">₹0</div>
+                        </div>
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">US/Foreign Stock STCG (Slab)</div>
+                            <div class="mini-card-val" id="cg-stcg-unlisted">₹0</div>
+                        </div>
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">Carry Forward STCG Loss</div>
+                            <div class="mini-card-val" id="cg-cf-stcg" style="color: var(--danger);">₹0</div>
+                        </div>
+                        <div class="metric-mini-card">
+                            <div class="mini-card-label">Carry Forward LTCG Loss</div>
+                            <div class="mini-card-val" id="cg-cf-ltcg" style="color: var(--danger);">₹0</div>
+                        </div>
+                    </div>
+
+                    <div class="tax-table-card" style="margin-bottom: 2rem;">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Schedule CG - Copy-paste Summaries</span>
+                        </div>
+                        <div class="table-rows">
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Short-term Capital Gains (Section 111A)</span>
+                                    <span class="label-sub">Indian listed shares net gains (Taxed at 15% / 20%)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="cg-copy-stcg-listed">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('cg-copy-stcg-listed')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Long-term Capital Gains (Section 112A)</span>
+                                    <span class="label-sub">Indian listed shares net gains exceeding exemption limit</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="cg-copy-ltcg-listed">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('cg-copy-ltcg-listed')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Long-term Capital Gains (Section 112) - Unlisted</span>
+                                    <span class="label-sub">US Stock / RSU sales held for > 24 months (Taxed at 12.5% / 20%)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="cg-copy-ltcg-unlisted">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('cg-copy-ltcg-unlisted')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Short-term Capital Gains - Unlisted (Slab Rate)</span>
+                                    <span class="label-sub">US Stock / RSU sales held for <= 24 months (Taxed at slab rates)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="cg-copy-stcg-unlisted">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('cg-copy-stcg-unlisted')">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tax-table-card">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Processed Transactions Ledger</span>
+                        </div>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Type</th>
+                                        <th>Qty</th>
+                                        <th>Buy Date</th>
+                                        <th>Sell Date</th>
+                                        <th>Hold (Days)</th>
+                                        <th>Buy Value (INR)</th>
+                                        <th>Sell Value (INR)</th>
+                                        <th>Net Gain/Loss (INR)</th>
+                                        <th>Section</th>
+                                        <th>Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule OS -->
+                <div id="tab-schedule-os" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>Fill under Schedule Income from Other Sources (Schedule OS).</p>
+                    </div>
+                    <div class="tax-table-card">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Schedule OS - Other Sources Income</span>
+                        </div>
+                        <div class="table-rows">
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Interest from Savings Account</span>
+                                    <span class="label-sub">Section 56(1)(i)(b). Deduction claimed under 80TTA.</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="os-savings-interest">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('os-savings-interest')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Interest from Deposits (FDs/RDs)</span>
+                                    <span class="label-sub">Interest earned from bank deposits</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="os-fd-interest">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('os-fd-interest')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Domestic Dividends</span>
+                                    <span class="label-sub">Dividends received from Indian companies</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="os-domestic-dividends">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('os-domestic-dividends')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Foreign Dividends (US stocks)</span>
+                                    <span class="label-sub">Dividends from US stock holdings (Converted at preceding month-end TTBR)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="os-foreign-dividends">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('os-foreign-dividends')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Foreign Interest (US banks)</span>
+                                    <span class="label-sub">Interest received from US bank accounts (Converted at preceding month-end TTBR)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="os-foreign-interest">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('os-foreign-interest')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Taxable EPF Interest</span>
+                                    <span class="label-sub">Interest on annual EPF employee contribution exceeding ₹2,50,000</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="os-epf-interest">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('os-epf-interest')">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule VIA -->
+                <div id="tab-schedule-via" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>Deductions under Chapter VI-A. Note: These are only applicable if you choose the Old Tax Regime.</p>
+                    </div>
+                    <div class="tax-table-card">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Schedule VIA - Deductions</span>
+                        </div>
+                        <div class="table-rows">
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Section 80C</span>
+                                    <span class="label-sub">EPF contribution + Home Loan Principal + PPF/ELSS (Capped at ₹1,50,000)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="via-80c">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('via-80c')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Section 80D</span>
+                                    <span class="label-sub">Health insurance premiums paid (Capped at ₹25,000)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="via-80d">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('via-80d')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Section 80TTA</span>
+                                    <span class="label-sub">Interest on savings accounts (Capped at ₹10,000 for Non-Seniors)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="via-80tta">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('via-80tta')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Section 80TTB</span>
+                                    <span class="label-sub">Interest on savings bank + FDs for Senior Citizens (Capped at ₹50,000)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="via-80ttb">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('via-80ttb')">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule FA -->
+                <div id="tab-schedule-fa" class="tab-panel">
+                    <div class="step-instruction">
+                        <p><strong>MANDATORY FOR FOREIGN SHARES/RSUs (e.g. US STOCKS)</strong>. Report in Schedule FA. All values in USD. Schedule FA follows the Calendar Year ending before the Financial Year (i.e. Calendar Year 2025 for FY 2025-26 filings).</p>
+                    </div>
+                    <div class="tax-table-card">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Schedule FA - Details of Foreign Assets (US Stocks/RSUs)</span>
+                        </div>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset Description</th>
+                                        <th>Broker</th>
+                                        <th>Peak Value (USD)</th>
+                                        <th>Closing Value (USD)</th>
+                                        <th>Dividends Received (USD)</th>
+                                        <th>Sale Proceeds (USD)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fa-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Form 67 & Relief -->
+                <div id="tab-form-67" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>For US Dividends and US bank interest, tax is withheld in the USA. Claim credit under Section 90 by filing <strong>Form 67</strong> before filing your tax return.</p>
+                    </div>
+                    <div class="tax-table-card" style="margin-bottom: 2rem;">
+                        <div class="table-header-bar">
+                            <span class="table-header-title">Form 67 & Schedule TR/FSI inputs</span>
+                        </div>
+                        <div class="table-rows">
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Country Code & DTAA Articles</span>
+                                    <span class="label-sub">USA (Country code: 01), DTAA Articles: Article 10 (Dividends) & Article 11 (Interest)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="relief-dtaa-article">USA - Article 10 & 11</span>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Gross US Dividend Income (INR)</span>
+                                    <span class="label-sub">To report in Schedule FSI (Dividends)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="relief-foreign-dividend">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('relief-foreign-dividend')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Gross US Bank Interest Income (INR)</span>
+                                    <span class="label-sub">To report in Schedule FSI (Interest)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="relief-foreign-interest">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('relief-foreign-interest')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Total Gross US Income (INR)</span>
+                                    <span class="label-sub">Combined US source income</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="relief-foreign-income">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('relief-foreign-income')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Total Tax Paid in US / Withheld (INR)</span>
+                                    <span class="label-sub">Combined US federal tax withheld from Form 1042-S</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="relief-tax-withheld">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('relief-tax-withheld')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Foreign Tax Credit (FTC) Claimed (INR)</span>
+                                    <span class="label-sub">Relief allowed under Section 90 (lower of US tax or proportional Indian tax u/s 90)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="relief-ftc-claimed" style="color: var(--success);">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('relief-ftc-claimed')">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spinner overlay -->
+    <div id="loader" class="loader-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Decrypting PDFs & Computing Taxes...</div>
+    </div>
+
+    <script>
+        document.getElementById("btn-process").addEventListener("click", function() {
+            const panEl = document.getElementById("pan");
+            const dobEl = document.getElementById("dob");
+            
+            const panVal = panEl.value.trim();
+            const dobVal = dobEl.value.trim();
+            
+            // Validation matches standard Indian PAN and DOB format
+            const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i;
+            const dobRegex = /^[0-9]{8}$/;
+            
+            let hasErrors = false;
+            
+            if (!panRegex.test(panVal)) {
+                panEl.classList.add("is-invalid");
+                hasErrors = true;
+            } else {
+                panEl.classList.remove("is-invalid");
+            }
+            
+            if (!dobRegex.test(dobVal)) {
+                dobEl.classList.add("is-invalid");
+                hasErrors = true;
+            } else {
+                dobEl.classList.remove("is-invalid");
+            }
+            
+            if (hasErrors) {
+                alert("Please check the mandatory fields:\n- PAN must be 10 characters (e.g. ABCDE1234F)\n- Date of Birth must be 8 digits in DDMMYYYY format (e.g. 31121990)");
+                return;
+            }
+            
+            // Show loader
+            document.getElementById("loader").style.display = "flex";
+            
+            const formData = new FormData();
+            formData.append("pan", panVal);
+            formData.append("dob", dobVal);
+            formData.append("form16_password", document.getElementById("form16_password").value);
+            formData.append("fy", document.getElementById("fy").value);
+            formData.append("home_loan_interest", document.getElementById("home_loan_interest").value);
+            formData.append("home_loan_principal", document.getElementById("home_loan_principal").value);
+            formData.append("custom_80c", document.getElementById("custom_80c").value);
+            formData.append("custom_80d", document.getElementById("custom_80d").value);
+            formData.append("advance_tax", document.getElementById("advance_tax").value);
+
+            // Append files
+            const f16 = document.getElementById("file_form16").files[0];
+            if (f16) formData.append("form16", f16);
+
+            const ais = document.getElementById("file_ais_tis").files[0];
+            if (ais) formData.append("ais_tis", ais);
+
+            const indStock = document.getElementById("file_indian_stock").files[0];
+            if (indStock) formData.append("indian_stock", indStock);
+
+            const usStock = document.getElementById("file_us_stock").files[0];
+            if (usStock) formData.append("us_stock", usStock);
+
+            const us1042s = document.getElementById("file_us_1042s").files;
+            for (let i = 0; i < us1042s.length; i++) {
+                formData.append("us_1042s", us1042s[i]);
+            }
+
+            // Update badge for FY
+            document.getElementById("active-fy-badge").querySelector("span").textContent = "FY " + document.getElementById("fy").value;
+
+            fetch("/api/process", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("loader").style.display = "none";
+                if (data.success) {
+                    renderDashboard(data);
+                } else {
+                    alert("Error: " + data.error);
+                }
+            })
+            .catch(err => {
+                document.getElementById("loader").style.display = "none";
+                alert("Error connecting to backend: " + err);
+            });
+        });
+
+        function formatINR(val) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            }).format(val).replace("INR", "₹").trim();
+        }
+
+        function formatUSD(val) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 2
+            }).format(val);
+        }
+
+        function switchTab(tabId) {
+            // Deactivate all
+            document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+            document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.remove("active"));
+            
+            // Activate current
+            const clickedBtn = Array.from(document.querySelectorAll(".tab-btn")).find(btn => btn.getAttribute("onclick").includes(tabId));
+            if (clickedBtn) clickedBtn.classList.add("active");
+            document.getElementById(tabId).classList.add("active");
+        }
+
+        function copyVal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            // Extract numerical value by stripping symbol, commas, spaces
+            let text = el.innerText.replace(/[₹$,]/g, "").trim();
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Find copy button sibling
+                const btn = el.nextElementSibling;
+                if (btn && btn.classList.contains("btn-copy")) {
+                    const oldText = btn.innerText;
+                    btn.innerText = "Copied!";
+                    btn.classList.add("copied");
+                    setTimeout(() => {
+                        btn.innerText = oldText;
+                        btn.classList.remove("copied");
+                    }, 1500);
+                }
+            }).catch(err => {
+                console.error("Clipboard copy failed: ", err);
+            });
+        }
+
+        function copyValueText(val) {
+            navigator.clipboard.writeText(val).then(() => {
+                const btn = event.currentTarget;
+                if (btn && btn.classList.contains("btn-copy")) {
+                    const oldText = btn.innerText;
+                    btn.innerText = "Copied!";
+                    btn.classList.add("copied");
+                    setTimeout(() => {
+                        btn.innerText = oldText;
+                        btn.classList.remove("copied");
+                    }, 1500);
+                }
+            }).catch(err => {
+                console.error("Clipboard copy failed: ", err);
+            });
+        }
+
+        function renderDashboard(data) {
+            const results = data.results;
+            const warnings = data.warnings;
+            const hasFiles = data.has_files;
+            
+            // Render warnings
+            const warningsBox = document.getElementById("warnings-container");
+            if (warnings && warnings.length > 0) {
+                warningsBox.style.display = "block";
+                warningsBox.innerHTML = `
+                    <div class="alert-box alert-warning">
+                        <div class="alert-warning-title">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                            File Processing Warnings
+                        </div>
+                        <ul class="warning-list">
+                            ${warnings.map(w => `<li>${w}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            } else {
+                warningsBox.style.display = "none";
+            }
+
+            // Render File status list
+            const fileStatusContainer = document.getElementById("file-status-container");
+            fileStatusContainer.innerHTML = `
+                <div class="file-status-item">
+                    <span class="file-name">Form 16 PDF</span>
+                    <span class="status-badge ${hasFiles.form16 ? 'status-found' : 'status-missing'}">${hasFiles.form16 ? 'Uploaded' : 'Missing'}</span>
+                </div>
+                <div class="file-status-item">
+                    <span class="file-name">AIS/TIS PDF</span>
+                    <span class="status-badge ${hasFiles.ais_tis ? 'status-found' : 'status-missing'}">${hasFiles.ais_tis ? 'Uploaded' : 'Missing'}</span>
+                </div>
+                <div class="file-status-item">
+                    <span class="file-name">Indian Stock CSV</span>
+                    <span class="status-badge ${hasFiles.indian_stock ? 'status-found' : 'status-missing'}">${hasFiles.indian_stock ? 'Uploaded' : 'Missing'}</span>
+                </div>
+                <div class="file-status-item">
+                    <span class="file-name">US Stock CSV</span>
+                    <span class="status-badge ${hasFiles.us_stock ? 'status-found' : 'status-missing'}">${hasFiles.us_stock ? 'Uploaded' : 'Missing'}</span>
+                </div>
+                <div class="file-status-item">
+                    <span class="file-name">US 1042-S PDF(s)</span>
+                    <span class="status-badge ${hasFiles.us_1042s ? 'status-found' : 'status-missing'}">${hasFiles.us_1042s ? 'Uploaded' : 'Missing'}</span>
+                </div>
+            `;
+
+            // Unhide elements
+            document.getElementById("regime-comparison-container").style.display = "grid";
+            document.getElementById("tabs-container").style.display = "flex";
+            document.getElementById("recommendation-callout").style.display = "block";
+
+            // Pre-fill Advance Tax input in sidebar if parsed and not manual
+            if (data.parsed_raw && data.parsed_raw.ais && data.parsed_raw.ais.advance_tax_paid !== undefined) {
+                const advInput = document.getElementById("advance_tax");
+                if (!advInput.value) {
+                    advInput.value = data.parsed_raw.ais.advance_tax_paid;
+                }
+            }
+
+            const optimal = results.optimal_regime;
+            const optimalData = results.regimes[optimal];
+            const otherRegime = optimal === "new" ? "old" : "new";
+            const otherData = results.regimes[otherRegime];
+
+            // 1. Render comparison cards
+            document.getElementById("new-tax-payable").innerText = formatINR(results.regimes.new.net_tax_payable);
+            document.getElementById("new-slab-income").innerText = formatINR(results.regimes.new.taxable_slab_income);
+            document.getElementById("new-cg-income").innerText = formatINR(results.regimes.new.special_cg_income);
+            let newDueVal = results.regimes.new.final_due_or_refund;
+            document.getElementById("new-due-refund").innerText = formatINR(newDueVal) + (newDueVal < 0 ? " (Refund)" : " (Due)");
+            document.getElementById("new-due-refund").style.color = newDueVal < 0 ? "var(--success)" : "var(--danger)";
+
+            document.getElementById("old-tax-payable").innerText = formatINR(results.regimes.old.net_tax_payable);
+            document.getElementById("old-slab-income").innerText = formatINR(results.regimes.old.taxable_slab_income);
+            document.getElementById("old-cg-income").innerText = formatINR(results.regimes.old.special_cg_income);
+            let oldDueVal = results.regimes.old.final_due_or_refund;
+            document.getElementById("old-due-refund").innerText = formatINR(oldDueVal) + (oldDueVal < 0 ? " (Refund)" : " (Due)");
+            document.getElementById("old-due-refund").style.color = oldDueVal < 0 ? "var(--success)" : "var(--danger)";
+            
+            // Calculate savings and render recommendation card
+            const diff = Math.abs(results.regimes.old.net_tax_payable - results.regimes.new.net_tax_payable);
+            const savingStr = formatINR(diff);
+            if (optimal === "new") {
+                document.getElementById("recommendation-text").innerHTML = `The <strong>New Tax Regime</strong> is more beneficial for you. You save <strong>${savingStr}</strong> in taxes compared to the Old regime.`;
+                document.getElementById("new-regime-rec-badge").style.display = "inline-flex";
+                document.getElementById("old-regime-rec-badge").style.display = "none";
+                document.getElementById("card-new-regime").classList.add("recommended");
+                document.getElementById("card-old-regime").classList.remove("recommended");
+
+                document.getElementById("new-regime-savings").innerText = diff > 0 ? `Saves ${savingStr}` : "Optimal Choice";
+                document.getElementById("old-regime-savings").innerText = "";
+            } else {
+                document.getElementById("recommendation-text").innerHTML = `The <strong>Old Tax Regime</strong> is more beneficial for you. You save <strong>${savingStr}</strong> in taxes compared to the New regime.`;
+                document.getElementById("old-regime-rec-badge").style.display = "inline-flex";
+                document.getElementById("new-regime-rec-badge").style.display = "none";
+                document.getElementById("card-old-regime").classList.add("recommended");
+                document.getElementById("card-new-regime").classList.remove("recommended");
+
+                document.getElementById("old-regime-savings").innerText = diff > 0 ? `Saves ${savingStr}` : "Optimal Choice";
+                document.getElementById("new-regime-savings").innerText = "";
+            }
+
+            // Generate Comparative Table rows dynamically
+            const oldR = results.regimes.old;
+            const newR = results.regimes.new;
+            const rawF16 = data.parsed_raw.form16 || {};
+            const activeFy = document.getElementById("fy").value;
+            const stdNew = newR.gross_salary > 0 ? (activeFy === "2025-26" ? 75000 : 50000) : 0;
+            const stdOld = oldR.gross_salary > 0 ? 50000 : 0;
+            const exemptNew = 0;
+            const exemptOld = rawF16.allowances_exempt_sec_10 || 0;
+            const profNew = 0;
+            const profOld = rawF16.professional_tax_16_ii || 0;
+            const hpNew = 0;
+            const hpOld = oldR.house_property_income;
+            const dedNew = 0;
+            const dedOld = oldR.deductions.total;
+
+            let total_us_dividends_inr = 0;
+            let total_us_interest_inr = 0;
+            if (data.parsed_raw.us_dividends && data.parsed_raw.us_dividends.length > 0) {
+                total_us_dividends_inr = data.parsed_raw.us_dividends.reduce((acc, curr) => acc + curr.amount_inr, 0);
+            }
+            if (data.parsed_raw.us_interest && data.parsed_raw.us_interest.length > 0) {
+                total_us_interest_inr = data.parsed_raw.us_interest.reduce((acc, curr) => acc + curr.amount_inr, 0);
+            }
+
+            function makeCompRow(label, sub, oldVal, newVal, opt) {
+                const isOldOpt = opt === "old";
+                const oldStr = formatINR(oldVal);
+                const newStr = formatINR(newVal);
+                
+                const oldCopyBtn = isOldOpt ? `<button class="btn-copy" onclick="copyValueText('${oldVal}')">Copy</button>` : "";
+                const newCopyBtn = !isOldOpt ? `<button class="btn-copy" onclick="copyValueText('${newVal}')">Copy</button>` : "";
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; color: #fff; font-size: 0.8rem;">${label}</div>
+                            <div style="font-size: 0.65rem; color: var(--text-secondary);">${sub}</div>
+                        </td>
+                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: ${isOldOpt ? '#fff' : 'var(--text-secondary)'}; font-weight: ${isOldOpt ? '700' : 'normal'};">
+                            <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
+                                <span>${oldStr}</span>
+                                ${oldCopyBtn}
+                            </div>
+                        </td>
+                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: ${!isOldOpt ? '#fff' : 'var(--text-secondary)'}; font-weight: ${!isOldOpt ? '700' : 'normal'};">
+                            <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
+                                <span>${newStr}</span>
+                                ${newCopyBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            const compBody = document.getElementById("comparison-table-body");
+            compBody.innerHTML = "";
+            compBody.innerHTML += makeCompRow("Salary income (17(1) + 17(2) + 17(3))", "Total gross salary received", oldR.gross_salary, newR.gross_salary, optimal);
+            compBody.innerHTML += makeCompRow("Less: Exempt Allowances", "Section 10 HRA, LTA etc. (Nil in New)", exemptOld, exemptNew, optimal);
+            compBody.innerHTML += makeCompRow("Less: Standard Deduction", "Section 16(ia) (₹75,000 for New FY25-26)", stdOld, stdNew, optimal);
+            compBody.innerHTML += makeCompRow("Less: Professional Tax", "Section 16(ii) employment tax (Nil in New)", profOld, profNew, optimal);
+            compBody.innerHTML += makeCompRow("Net Salary Income", "Taxable salary components", oldR.net_salary, newR.net_salary, optimal);
+            compBody.innerHTML += makeCompRow("House Property Income/Loss", "Section 24(b) interest deduction (Nil in New)", hpOld, hpNew, optimal);
+            compBody.innerHTML += makeCompRow("Domestic & Other Sources Slab Income", "Savings/FD interest, domestic dividends, EPF", oldR.other_sources_income - total_us_dividends_inr - total_us_interest_inr, newR.other_sources_income - total_us_dividends_inr - total_us_interest_inr, optimal);
+            compBody.innerHTML += makeCompRow("US Dividend Income", "Dividends reported on Form 1042-S u/s 56(1)", total_us_dividends_inr, total_us_dividends_inr, optimal);
+            compBody.innerHTML += makeCompRow("US Bank Interest Income", "Interest reported on Form 1042-S u/s 56(1)", total_us_interest_inr, total_us_interest_inr, optimal);
+            compBody.innerHTML += makeCompRow("Gross Total Income", "Slabs Income + HP + Other Sources", oldR.net_salary + oldR.house_property_income + oldR.other_sources_income, newR.net_salary + newR.house_property_income + newR.other_sources_income, optimal);
+            compBody.innerHTML += makeCompRow("Less: Section 80C Deduction", "Life insurance, EPF, HL principal (Capped at 1.5L)", oldR.deductions["80C"], newR.deductions["80C"], optimal);
+            compBody.innerHTML += makeCompRow("Less: Section 80D Deduction", "Health Insurance (Capped at 25k)", oldR.deductions["80D"], newR.deductions["80D"], optimal);
+            compBody.innerHTML += makeCompRow("Less: Section 80TTA Deduction", "Interest on savings accounts (Non-Seniors, Capped at 10k)", oldR.deductions["80TTA"] || 0, newR.deductions["80TTA"] || 0, optimal);
+            compBody.innerHTML += makeCompRow("Less: Section 80TTB Deduction", "Interest on savings & FDs (Seniors, Capped at 50k)", oldR.deductions["80TTB"] || 0, newR.deductions["80TTB"] || 0, optimal);
+            compBody.innerHTML += makeCompRow("Total Chapter VI-A Deductions", "Sum of 80C, 80D, 80TTA/80TTB deductions", oldR.deductions.total, newR.deductions.total, optimal);
+            compBody.innerHTML += makeCompRow("Taxable Slab Income", "Income taxed at slab rates", oldR.taxable_slab_income, newR.taxable_slab_income, optimal);
+            compBody.innerHTML += makeCompRow("Special Rate Capital Gains", "Gains taxed at special rates (111A/112A/112)", oldR.special_cg_income, newR.special_cg_income, optimal);
+            compBody.innerHTML += makeCompRow("Total Taxable Income", "Net taxable slab + special capital gains", oldR.total_taxable_income, newR.total_taxable_income, optimal);
+            compBody.innerHTML += makeCompRow("Income Tax on Slab Income", "Tax calculated at slab rates u/s 87A rebate", oldR.slab_tax, newR.slab_tax, optimal);
+            compBody.innerHTML += makeCompRow("Income Tax on Capital Gains", "Special tax on stock sales", oldR.cg_tax.total, newR.cg_tax.total, optimal);
+            compBody.innerHTML += makeCompRow("Basic Tax Payable", "Slab tax + Capital gains tax", oldR.basic_tax, newR.basic_tax, optimal);
+            compBody.innerHTML += makeCompRow("Add: Cess", "Health & Education Cess at 4%", oldR.cess, newR.cess, optimal);
+            compBody.innerHTML += makeCompRow("Total Tax Before Relief", "Basic tax + Cess", oldR.total_tax_before_relief, newR.total_tax_before_relief, optimal);
+            compBody.innerHTML += makeCompRow("Less: Double Tax Relief (Sec 90)", "Foreign Tax Credit u/s DTAA for US dividends & interest", oldR.ftc_relief, newR.ftc_relief, optimal);
+            compBody.innerHTML += makeCompRow("Net Tax Payable", "Tax liability after DTAA relief", oldR.net_tax_payable, newR.net_tax_payable, optimal);
+            compBody.innerHTML += makeCompRow("Less: TDS Deducted", "Tax deducted at source u/s Form 16", oldR.tds_credited, newR.tds_credited, optimal);
+            compBody.innerHTML += makeCompRow("Less: Advance Tax Paid", "Advance tax paid during the financial year", oldR.advance_tax_paid, newR.advance_tax_paid, optimal);
+            
+            const finalOld = oldR.final_due_or_refund;
+            const finalNew = newR.final_due_or_refund;
+            
+            compBody.innerHTML += `
+                <tr style="border-top: 2px solid var(--border-color); background: rgba(255, 255, 255, 0.02);">
+                    <td>
+                        <div style="font-weight: 800; color: #fff; font-size: 0.85rem;">Final Tax Status</div>
+                        <div style="font-size: 0.65rem; color: var(--text-secondary);">Balance Due (+) / Refund (-)</div>
+                    </td>
+                    <td style="text-align: right; font-family: monospace; font-size: 0.95rem; color: ${finalOld < 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 800;">
+                        <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
+                            <span>${finalOld < 0 ? '-' : '+'}${formatINR(Math.abs(finalOld))}</span>
+                            ${optimal === 'old' ? `<button class="btn-copy" onclick="copyValueText('${Math.abs(finalOld)}')">Copy</button>` : ''}
+                        </div>
+                    </td>
+                    <td style="text-align: right; font-family: monospace; font-size: 0.95rem; color: ${finalNew < 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 800;">
+                        <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
+                            <span>${finalNew < 0 ? '-' : '+'}${formatINR(Math.abs(finalNew))}</span>
+                            ${optimal === 'new' ? `<button class="btn-copy" onclick="copyValueText('${Math.abs(finalNew)}')">Copy</button>` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // Overview Mini Cards
+            document.getElementById("ov-gross-income").innerText = formatINR(optimalData.gross_salary + optimalData.other_sources_income + optimalData.special_cg_income);
+            document.getElementById("ov-deductions").innerText = formatINR(optimalData.deductions.total + (optimal === "new" ? (results.regimes.new.gross_salary > 0 ? (activeFy === "2025-26" ? 75000 : 50000) : 0) : 50000));
+            document.getElementById("ov-tax-payable").innerText = formatINR(optimalData.net_tax_payable);
+            
+            document.getElementById("active-regime-indicator").innerText = optimal === "new" ? "New Regime Active" : "Old Regime Active";
+
+            // Slabs table
+            const slabRows = document.getElementById("slab-breakdown-rows");
+            slabRows.innerHTML = "";
+            if (optimalData.slab_breakdown && optimalData.slab_breakdown.length > 0) {
+                optimalData.slab_breakdown.forEach(row => {
+                    slabRows.innerHTML += `
+                        <div class="table-row">
+                            <div class="row-label">
+                                <span class="label-main">${row.slab}</span>
+                                <span class="label-sub">Rate: ${row.rate}</span>
+                            </div>
+                            <div class="row-value-area">
+                                <span class="row-val">${formatINR(row.tax)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                slabRows.innerHTML = `<div style="text-align:center; padding: 1.5rem; color:var(--text-secondary);">No tax calculated on slab income.</div>`;
+            }
+
+            // Schedule S details
+            document.getElementById("s-gross-salary").innerText = formatINR(optimalData.gross_salary);
+            document.getElementById("s-salary-17-1").innerText = formatINR(rawF16.gross_salary_17_1 || 0);
+            document.getElementById("s-perquisites-17-2").innerText = formatINR(rawF16.perquisites_17_2 || 0);
+            document.getElementById("s-profits-17-3").innerText = formatINR(rawF16.profits_lieu_17_3 || 0);
+            document.getElementById("s-exempt-10").innerText = formatINR(optimal === "old" ? (rawF16.allowances_exempt_sec_10 || 0) : 0);
+            document.getElementById("s-std-ded").innerText = formatINR(optimal === "new" ? (optimalData.gross_salary > 0 ? (activeFy === "2025-26" ? 75000 : 50000) : 0) : 50000);
+            document.getElementById("s-prof-tax").innerText = formatINR(optimal === "old" ? (rawF16.professional_tax_16_ii || 0) : 0);
+
+            // Schedule HP
+            let hpVal = Math.abs(optimalData.house_property_income);
+            document.getElementById("hp-interest").innerText = formatINR(hpVal);
+            document.getElementById("hp-net-loss").innerText = optimalData.house_property_income < 0 ? "-" + formatINR(hpVal) : "₹0";
+
+            // Schedule CG
+            const cg = data.results.capital_gains;
+            document.getElementById("cg-ltcg-listed").innerText = formatINR(cg.raw_gains.ltcg_listed);
+            document.getElementById("cg-stcg-listed").innerText = formatINR(cg.raw_gains.stcg_listed);
+            document.getElementById("cg-ltcg-unlisted").innerText = formatINR(cg.raw_gains.ltcg_unlisted);
+            document.getElementById("cg-stcg-unlisted").innerText = formatINR(cg.raw_gains.stcg_unlisted);
+            document.getElementById("cg-cf-stcg").innerText = formatINR(cg.net_gains.cf_stcg_loss);
+            document.getElementById("cg-cf-ltcg").innerText = formatINR(cg.net_gains.cf_ltcg_loss);
+
+            // Copy CG section
+            document.getElementById("cg-copy-stcg-listed").innerText = formatINR(cg.net_gains.stcg_listed);
+            document.getElementById("cg-copy-ltcg-listed").innerText = formatINR(cg.net_gains.ltcg_listed);
+            document.getElementById("cg-copy-ltcg-unlisted").innerText = formatINR(cg.net_gains.ltcg_unlisted);
+            document.getElementById("cg-copy-stcg-unlisted").innerText = formatINR(cg.net_gains.stcg_unlisted);
+
+            // Transactions Table
+            const txBody = document.getElementById("transactions-table-body");
+            txBody.innerHTML = "";
+            if (cg.transactions && cg.transactions.length > 0) {
+                cg.transactions.forEach(t => {
+                    txBody.innerHTML += `
+                        <tr>
+                            <td style="font-weight:600; color:#fff;">${t.symbol}</td>
+                            <td><span class="type-pill ${t.type === 'LTCG' ? 'type-ltcg' : 'type-stcg'}">${t.type}</span></td>
+                            <td>${t.quantity}</td>
+                            <td>${t.buy_date}</td>
+                            <td>${t.sell_date}</td>
+                            <td>${t.holding_days}</td>
+                            <td style="font-family:monospace;">${formatINR(t.buy_val_inr)}</td>
+                            <td style="font-family:monospace;">${formatINR(t.sell_val_inr)}</td>
+                            <td style="font-family:monospace; font-weight:700; color:${t.gain_inr >= 0 ? '#34d399' : '#f87171'}">${t.gain_inr >= 0 ? '+' : ''}${formatINR(t.gain_inr)}</td>
+                            <td>${t.section}</td>
+                            <td>${t.rate}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                txBody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 1.5rem; color:var(--text-secondary);">No stock transactions processed.</td></tr>`;
+            }
+
+            // Schedule OS
+            const rawAis = data.parsed_raw.ais || {};
+            document.getElementById("os-savings-interest").innerText = formatINR(rawAis.savings_interest || 0);
+            document.getElementById("os-fd-interest").innerText = formatINR(rawAis.fd_interest || 0);
+            document.getElementById("os-domestic-dividends").innerText = formatINR(rawAis.domestic_dividends || 0);
+            document.getElementById("os-foreign-dividends").innerText = formatINR(results.form67_details.foreign_dividend_inr || 0);
+            document.getElementById("os-foreign-interest").innerText = formatINR(results.form67_details.foreign_interest_inr || 0);
+            document.getElementById("os-epf-interest").innerText = formatINR(rawAis.taxable_epf_interest || 0);
+
+            // If parsed actual values, apply them
+            if (data.results && data.results.regimes) {
+                // If there's AIS data parsed
+            }
+
+            // Deductions
+            document.getElementById("via-80c").innerText = formatINR(optimalData.deductions["80C"]);
+            document.getElementById("via-80d").innerText = formatINR(optimalData.deductions["80D"]);
+            document.getElementById("via-80tta").innerText = formatINR(optimalData.deductions["80TTA"] || 0);
+            document.getElementById("via-80ttb").innerText = formatINR(optimalData.deductions["80TTB"] || 0);
+
+            // Schedule FA Table
+            const faBody = document.getElementById("fa-table-body");
+            faBody.innerHTML = "";
+            if (results.schedule_fa && results.schedule_fa.length > 0) {
+                results.schedule_fa.forEach(row => {
+                    faBody.innerHTML += `
+                        <tr>
+                            <td style="font-weight:600; color:#fff;">${row.asset_description}</td>
+                            <td>${row.institution_name}</td>
+                            <td style="font-family:monospace;">${formatUSD(row.peak_value_usd)}</td>
+                            <td style="font-family:monospace;">${formatUSD(row.closing_value_usd)}</td>
+                            <td style="font-family:monospace;">${formatUSD(row.gross_interest_dividend_usd)}</td>
+                            <td style="font-family:monospace;">${formatUSD(row.proceeds_from_sale_usd)}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                faBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 1.5rem; color:var(--text-secondary);">No US foreign assets / holdings processed.</td></tr>`;
+            }
+
+            // Form 67 & Double Tax Relief
+            const f67 = results.form67_details;
+            document.getElementById("relief-foreign-dividend").innerText = formatINR(f67.foreign_dividend_inr || 0);
+            document.getElementById("relief-foreign-interest").innerText = formatINR(f67.foreign_interest_inr || 0);
+            document.getElementById("relief-foreign-income").innerText = formatINR(f67.foreign_income_inr);
+            document.getElementById("relief-tax-withheld").innerText = formatINR(f67.tax_withheld_inr);
+            document.getElementById("relief-ftc-claimed").innerText = formatINR(f67.ftc_claimed_inr);
+            if (f67.dtaa_article) {
+                document.getElementById("relief-dtaa-article").innerText = f67.country + " - " + f67.dtaa_article;
+            }
+        }
+    </script>
+</body>
+</html>
