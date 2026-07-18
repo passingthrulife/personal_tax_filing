@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aatmanirbhar Tax - Personal ITR-2 Assistant</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-color: #080914;
@@ -39,7 +41,7 @@
             min-height: 100vh;
             line-height: 1.5;
             overflow-x: auto;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
         }
@@ -100,7 +102,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 2rem auto;
             padding: 0 1.5rem;
             display: grid;
@@ -269,6 +271,8 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
+            max-width: 900px;
+            width: 100%;
         }
 
         /* Regime Comparison Banner */
@@ -429,8 +433,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Grid data lists */
@@ -505,6 +516,8 @@
             font-weight: 700;
             color: #fff;
             font-family: monospace;
+            text-align: right;
+            min-width: 140px;
         }
 
         /* Copy Button styling */
@@ -707,8 +720,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-text {
@@ -719,8 +737,116 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
+        /* Modal Styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-card {
+            background: #0d0e22;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 95%;
+            max-width: 600px;
+            max-height: 85vh;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.8rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.15s ease;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Make rows clickable indicators */
+        .clickable-row {
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.15s ease;
+        }
+
+        .clickable-row .label-main::after {
+            content: " ⓘ";
+            font-size: 0.75rem;
+            color: var(--primary);
+            opacity: 0.5;
+            transition: opacity 0.15s ease;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .clickable-row:hover .label-main::after {
+            opacity: 1;
+        }
+
+        .clickable-row:hover {
+            background: rgba(99, 102, 241, 0.08) !important;
+        }
     </style>
 </head>
+
 <body>
 
     <header>
@@ -728,11 +854,16 @@
             <div class="logo-icon">🇮🇳</div>
             <div>
                 <div class="logo-text">Aatmanirbhar Tax</div>
-                <div style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Personal ITR-2 Calculator</div>
+                <div
+                    style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Personal ITR-2 Calculator</div>
             </div>
         </div>
         <div id="active-fy-badge" class="badge-regime">
-            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                    d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+            </svg>
             <span>FY 2025-26</span>
         </div>
     </header>
@@ -742,20 +873,27 @@
         <div class="sidebar">
             <div class="card">
                 <div class="card-title">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                     Settings & Keys
                 </div>
                 <div class="form-group">
                     <label for="pan">PAN Card Number <span style="color: #ef4444; font-weight: bold;">*</span></label>
-                    <input type="text" id="pan" class="form-control" placeholder="ABCDE1234F" style="text-transform: uppercase;">
+                    <input type="text" id="pan" class="form-control" placeholder="ABCDE1234F"
+                        style="text-transform: uppercase;" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label for="dob">Date of Birth (DDMMYYYY) <span style="color: #ef4444; font-weight: bold;">*</span></label>
-                    <input type="text" id="dob" class="form-control" placeholder="31121990">
+                    <label for="dob">Date of Birth (DDMMYYYY) <span
+                            style="color: #ef4444; font-weight: bold;">*</span></label>
+                    <input type="text" id="dob" class="form-control" placeholder="31121990" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="form16_password">Form 16 Password (Optional)</label>
-                    <input type="password" id="form16_password" class="form-control" placeholder="Only if custom password">
+                    <input type="password" id="form16_password" class="form-control"
+                        placeholder="Only if custom password">
                 </div>
                 <div class="form-group">
                     <label for="fy">Financial Year</label>
@@ -768,7 +906,10 @@
 
             <div class="card">
                 <div class="card-title">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
                     Document Uploads
                 </div>
                 <div class="form-group">
@@ -776,8 +917,8 @@
                     <input type="file" id="file_form16" class="form-control-file" accept=".pdf">
                 </div>
                 <div class="form-group">
-                    <label for="file_ais_tis">AIS / TIS PDF</label>
-                    <input type="file" id="file_ais_tis" class="form-control-file" accept=".pdf">
+                    <label for="file_ais_tis">AIS CSV Files (Multiple) / TIS PDF</label>
+                    <input type="file" id="file_ais_tis" class="form-control-file" accept=".csv,.pdf" multiple>
                 </div>
                 <div class="form-group">
                     <label for="file_indian_stock">Indian Stock Sales CSV</label>
@@ -788,15 +929,27 @@
                     <input type="file" id="file_us_stock" class="form-control-file" accept=".csv">
                 </div>
                 <div class="form-group">
+                    <label for="file_us_dividends">US Dividends CSV (optional)</label>
+                    <input type="file" id="file_us_dividends" class="form-control-file" accept=".csv">
+                    <small
+                        style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 0.2rem; display: block;">CSV
+                        containing date-by-date US dividend transactions</small>
+                </div>
+                <div class="form-group">
                     <label for="file_us_1042s">US Form 1042-S PDFs</label>
                     <input type="file" id="file_us_1042s" class="form-control-file" accept=".pdf" multiple>
-                    <small style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 0.2rem; display: block;">Supports selecting multiple 1042-S PDFs</small>
+                    <small
+                        style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 0.2rem; display: block;">Supports
+                        selecting multiple 1042-S PDFs</small>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-title">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
                     Deduction Manual Entry
                 </div>
                 <div class="form-group">
@@ -804,11 +957,11 @@
                     <input type="number" id="home_loan_interest" class="form-control" placeholder="e.g. 185000">
                 </div>
                 <div class="form-group">
-                    <label for="home_loan_principal">HL Principal u/s 80C</label>
+                    <label for="home_loan_principal">Home Loan Principal (Sec 80C)</label>
                     <input type="number" id="home_loan_principal" class="form-control" placeholder="e.g. 80000">
                 </div>
                 <div class="form-group">
-                    <label for="custom_80c">Additional 80C (PPF/ELSS)</label>
+                    <label for="custom_80c">Other Section 80C Deductions (PPF/ELSS/etc.)</label>
                     <input type="number" id="custom_80c" class="form-control" placeholder="e.g. 50000">
                 </div>
                 <div class="form-group">
@@ -819,16 +972,51 @@
                     <label for="advance_tax">Advance Tax Paid</label>
                     <input type="number" id="advance_tax" class="form-control" placeholder="e.g. 50000">
                 </div>
+                <div class="form-group">
+                    <label for="hra_basic">Annual Basic Salary (INR)</label>
+                    <input type="number" id="hra_basic" class="form-control" placeholder="e.g. 1200000">
+                </div>
+                <div class="form-group">
+                    <label for="hra_received">Annual HRA Received (INR)</label>
+                    <input type="number" id="hra_received" class="form-control" placeholder="e.g. 500000">
+                </div>
+                <div class="form-group">
+                    <label for="hra_rent">Annual Rent Paid (INR)</label>
+                    <input type="number" id="hra_rent" class="form-control" placeholder="e.g. 360000">
+                </div>
+                <div class="form-group">
+                    <label for="hra_metro">City of Residence</label>
+                    <select id="hra_metro" class="form-control" style="background: var(--card-bg); color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; width: 100%;">
+                        <option value="false">Non-Metro (40% Basic Salary limit)</option>
+                        <option value="true">Metro - Delhi/Mumbai/Kolkata/Chennai (50% limit)</option>
+                    </select>
+                </div>
 
                 <button id="btn-process" class="btn-submit" style="margin-top: 1.5rem;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77m-13.67 13.67l3.77-3.77m0 0l1.6 1.6a1 1 0 001.4 0l3.77-3.77m-14.84-5.67a10 10 0 1114.14 14.14L3 21h4.24"/></svg>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77m-13.67 13.67l3.77-3.77m0 0l1.6 1.6a1 1 0 001.4 0l3.77-3.77m-14.84-5.67a10 10 0 1114.14 14.14L3 21h4.24" />
+                    </svg>
                     Process Tax Data
+                </button>
+                <button id="btn-quick-load" class="btn-submit"
+                    style="margin-top: 0.8rem; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Quick Load Local Documents
                 </button>
             </div>
 
             <div class="card">
                 <div class="card-title">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                     File Status
                 </div>
                 <div id="file-status-container" class="file-status-list">
@@ -856,7 +1044,8 @@
                         <div class="regime-tax-large" id="new-tax-payable">₹0</div>
                         <div class="regime-savings" id="new-regime-savings">Saves ₹0</div>
                     </div>
-                    <div style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
+                    <div
+                        style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
                         <div class="regime-metric-row">
                             <span>Taxable Slab Income</span>
                             <span class="regime-metric-val" id="new-slab-income">₹0</span>
@@ -882,7 +1071,8 @@
                         <div class="regime-tax-large" id="old-tax-payable">₹0</div>
                         <div class="regime-savings" id="old-regime-savings">Saves ₹0</div>
                     </div>
-                    <div style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
+                    <div
+                        style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
                         <div class="regime-metric-row">
                             <span>Taxable Slab Income</span>
                             <span class="regime-metric-val" id="old-slab-income">₹0</span>
@@ -906,21 +1096,26 @@
                     <button class="tab-btn" onclick="switchTab('tab-schedule-s')">Schedule S (Salary)</button>
                     <button class="tab-btn" onclick="switchTab('tab-schedule-hp')">Schedule HP (Home Loan)</button>
                     <button class="tab-btn" onclick="switchTab('tab-schedule-cg')">Schedule CG (Gains)</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-vda')">Schedule VDA (Crypto)</button>
                     <button class="tab-btn" onclick="switchTab('tab-schedule-os')">Schedule OS (Other)</button>
                     <button class="tab-btn" onclick="switchTab('tab-schedule-via')">Schedule VIA (Deductions)</button>
                     <button class="tab-btn" onclick="switchTab('tab-schedule-fa')">Schedule FA (Foreign)</button>
                     <button class="tab-btn" onclick="switchTab('tab-form-67')">Form 67 & Relief</button>
+                    <button class="tab-btn" onclick="switchTab('tab-schedule-al')">Schedule AL (Assets/Liab)</button>
                 </div>
 
                 <!-- Tab: Overview -->
                 <div id="tab-overview" class="tab-panel active">
                     <!-- Regime Selection Recommendation Callout -->
-                    <div id="recommendation-callout" class="card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%); border: 1px solid var(--success); margin-bottom: 1.5rem; display: none;">
+                    <div id="recommendation-callout" class="card"
+                        style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%); border: 1px solid var(--success); margin-bottom: 1.5rem; display: none;">
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <div style="font-size: 2rem;">💡</div>
                             <div>
-                                <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem;">Regime Selection Recommendation</h3>
-                                <p id="recommendation-text" style="font-size: 0.9rem; color: #a7f3d0; font-weight: 500;"></p>
+                                <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem;">
+                                    Regime Selection Recommendation</h3>
+                                <p id="recommendation-text"
+                                    style="font-size: 0.9rem; color: #a7f3d0; font-weight: 500;"></p>
                             </div>
                         </div>
                     </div>
@@ -949,9 +1144,9 @@
                             <table class="data-table" style="table-layout: fixed;">
                                 <thead>
                                     <tr>
-                                        <th style="width: 40%;">Income Component / Tax Particulars</th>
-                                        <th style="text-align: right; width: 30%;">Old Regime</th>
-                                        <th style="text-align: right; width: 30%;">New Regime</th>
+                                        <th style="width: 25%;">Income Component / Tax Particulars</th>
+                                        <th style="text-align: right; width: 40%;">New Regime</th>
+                                        <th style="text-align: right; width: 35%;">Old Regime</th>
                                     </tr>
                                 </thead>
                                 <tbody id="comparison-table-body">
@@ -975,7 +1170,8 @@
                 <!-- Tab: Schedule S -->
                 <div id="tab-schedule-s" class="tab-panel">
                     <div class="step-instruction">
-                        <p>Fill out the fields in Schedule Salary (Schedule S) in the e-filing website exactly as shown below.</p>
+                        <p>Fill out the fields in Schedule Salary (Schedule S) in the e-filing website exactly as shown
+                            below.</p>
                     </div>
                     <div class="tax-table-card">
                         <div class="table-header-bar">
@@ -992,7 +1188,7 @@
                                     <button class="btn-copy" onclick="copyVal('s-gross-salary')">Copy</button>
                                 </div>
                             </div>
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('salary-17-1')">
                                 <div class="row-label">
                                     <span class="label-main">Salary under Section 17(1)</span>
                                     <span class="label-sub">Basic pay, bonus, allowances, etc.</span>
@@ -1002,7 +1198,7 @@
                                     <button class="btn-copy" onclick="copyVal('s-salary-17-1')">Copy</button>
                                 </div>
                             </div>
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('perquisites-17-2')">
                                 <div class="row-label">
                                     <span class="label-main">Value of Perquisites under Section 17(2)</span>
                                     <span class="label-sub">Includes quarterly vested RSU value per Form 16</span>
@@ -1012,7 +1208,7 @@
                                     <button class="btn-copy" onclick="copyVal('s-perquisites-17-2')">Copy</button>
                                 </div>
                             </div>
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('profits-17-3')">
                                 <div class="row-label">
                                     <span class="label-main">Profits in lieu of salary under Section 17(3)</span>
                                     <span class="label-sub">Any additional profits</span>
@@ -1030,6 +1226,16 @@
                                 <div class="row-value-area">
                                     <span class="row-val" id="s-exempt-10">₹0</span>
                                     <button class="btn-copy" onclick="copyVal('s-exempt-10')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row" style="background: rgba(255,255,255,0.01);">
+                                <div class="row-label" style="margin-left: 1.5rem;">
+                                    <span class="label-main" style="font-size: 0.8rem; color: var(--text-secondary);">↳ Of which: Calculated HRA Exemption</span>
+                                    <span class="label-sub">Section 10(13A) HRA exemption (Nil in New)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="s-hra-exempt" style="font-size: 0.85rem; color: var(--text-secondary);">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('s-hra-exempt')">Copy</button>
                                 </div>
                             </div>
                             <div class="table-row">
@@ -1059,7 +1265,8 @@
                 <!-- Tab: Schedule HP -->
                 <div id="tab-schedule-hp" class="tab-panel">
                     <div class="step-instruction">
-                        <p>Deduction for Home Loan interest (Section 24(b)). Note: Self-occupied house property loss cannot be set off under the New Regime.</p>
+                        <p>Deduction for Home Loan interest (Section 24(b)). Note: Self-occupied house property loss
+                            cannot be set off under the New Regime.</p>
                     </div>
                     <div class="tax-table-card">
                         <div class="table-header-bar">
@@ -1069,7 +1276,8 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Interest Payable on Borrowed Capital (Section 24(b))</span>
-                                    <span class="label-sub">Interest on Home Loan (Capped at ₹2,00,000 for self-occupied under Old Regime)</span>
+                                    <span class="label-sub">Interest on Home Loan (Capped at ₹2,00,000 for self-occupied
+                                        under Old Regime)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="hp-interest">₹0</span>
@@ -1141,6 +1349,7 @@
                                 <div class="row-label">
                                     <span class="label-main">Long-term Capital Gains (Section 112A)</span>
                                     <span class="label-sub">Indian listed shares net gains exceeding exemption limit</span>
+                                    <span class="label-sub" id="cg-exemptions-listed-label" style="color: var(--primary); display:none; font-weight: 600;"></span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="cg-copy-ltcg-listed">₹0</span>
@@ -1150,7 +1359,9 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Long-term Capital Gains (Section 112) - Unlisted</span>
-                                    <span class="label-sub">US Stock / RSU sales held for > 24 months (Taxed at 12.5% / 20%)</span>
+                                    <span class="label-sub">US Stock / RSU sales held for > 24 months (Taxed at 12.5% /
+                                        20%)</span>
+                                    <span class="label-sub" id="cg-exemptions-unlisted-label" style="color: var(--primary); display:none; font-weight: 600;"></span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="cg-copy-ltcg-unlisted">₹0</span>
@@ -1160,13 +1371,39 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Short-term Capital Gains - Unlisted (Slab Rate)</span>
-                                    <span class="label-sub">US Stock / RSU sales held for <= 24 months (Taxed at slab rates)</span>
+                                    <span class="label-sub">US Stock / RSU sales held for <= 24 months (Taxed at slab
+                                            rates)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="cg-copy-stcg-unlisted">₹0</span>
                                     <button class="btn-copy" onclick="copyVal('cg-copy-stcg-unlisted')">Copy</button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="tax-table-card" style="margin-bottom: 2rem;">
+                        <div class="table-header-bar" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="table-header-title">Capital Gains Exemptions (Sec 54 / 54B / 54EC / 54F)</span>
+                            <button class="tab-btn" onclick="addCgExemptionRow()" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); margin: 0; padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+                                + Add Exemption
+                            </button>
+                        </div>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%;">Section</th>
+                                        <th style="width: 25%;">Applied To / Offset Category</th>
+                                        <th style="width: 25%;">Reinvestment Amount (INR)</th>
+                                        <th style="width: 25%;">Net Consideration (INR) <span style="font-size:0.7rem; color:var(--text-secondary);">(54F Only)</span></th>
+                                        <th style="width: 5%; text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cg-exemptions-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -1209,7 +1446,7 @@
                             <span class="table-header-title">Schedule OS - Other Sources Income</span>
                         </div>
                         <div class="table-rows">
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('savings-interest')">
                                 <div class="row-label">
                                     <span class="label-main">Interest from Savings Account</span>
                                     <span class="label-sub">Section 56(1)(i)(b). Deduction claimed under 80TTA.</span>
@@ -1219,7 +1456,7 @@
                                     <button class="btn-copy" onclick="copyVal('os-savings-interest')">Copy</button>
                                 </div>
                             </div>
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('fd-interest')">
                                 <div class="row-label">
                                     <span class="label-main">Interest from Deposits (FDs/RDs)</span>
                                     <span class="label-sub">Interest earned from bank deposits</span>
@@ -1229,7 +1466,7 @@
                                     <button class="btn-copy" onclick="copyVal('os-fd-interest')">Copy</button>
                                 </div>
                             </div>
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('domestic-dividends')">
                                 <div class="row-label">
                                     <span class="label-main">Domestic Dividends</span>
                                     <span class="label-sub">Dividends received from Indian companies</span>
@@ -1239,20 +1476,22 @@
                                     <button class="btn-copy" onclick="copyVal('os-domestic-dividends')">Copy</button>
                                 </div>
                             </div>
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('us-dividends')">
                                 <div class="row-label">
                                     <span class="label-main">Foreign Dividends (US stocks)</span>
-                                    <span class="label-sub">Dividends from US stock holdings (Converted at preceding month-end TTBR)</span>
+                                    <span class="label-sub">Dividends from US stock holdings (Converted at preceding
+                                        month-end TTBR)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="os-foreign-dividends">₹0</span>
                                     <button class="btn-copy" onclick="copyVal('os-foreign-dividends')">Copy</button>
                                 </div>
                             </div>
-                            <div class="table-row">
+                            <div class="table-row clickable-row" onclick="showBreakdown('us-interest')">
                                 <div class="row-label">
                                     <span class="label-main">Foreign Interest (US banks)</span>
-                                    <span class="label-sub">Interest received from US bank accounts (Converted at preceding month-end TTBR)</span>
+                                    <span class="label-sub">Interest received from US bank accounts (Converted at
+                                        preceding month-end TTBR)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="os-foreign-interest">₹0</span>
@@ -1262,7 +1501,8 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Taxable EPF Interest</span>
-                                    <span class="label-sub">Interest on annual EPF employee contribution exceeding ₹2,50,000</span>
+                                    <span class="label-sub">Interest on annual EPF employee contribution exceeding
+                                        ₹2,50,000</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="os-epf-interest">₹0</span>
@@ -1276,7 +1516,8 @@
                 <!-- Tab: Schedule VIA -->
                 <div id="tab-schedule-via" class="tab-panel">
                     <div class="step-instruction">
-                        <p>Deductions under Chapter VI-A. Note: These are only applicable if you choose the Old Tax Regime.</p>
+                        <p>Deductions under Chapter VI-A. Note: These are only applicable if you choose the Old Tax
+                            Regime.</p>
                     </div>
                     <div class="tax-table-card">
                         <div class="table-header-bar">
@@ -1286,7 +1527,8 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Section 80C</span>
-                                    <span class="label-sub">EPF contribution + Home Loan Principal + PPF/ELSS (Capped at ₹1,50,000)</span>
+                                    <span class="label-sub">EPF contribution + Home Loan Principal + PPF/ELSS (Capped at
+                                        ₹1,50,000)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="via-80c">₹0</span>
@@ -1306,7 +1548,8 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Section 80TTA</span>
-                                    <span class="label-sub">Interest on savings accounts (Capped at ₹10,000 for Non-Seniors)</span>
+                                    <span class="label-sub">Interest on savings accounts (Capped at ₹10,000 for
+                                        Non-Seniors)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="via-80tta">₹0</span>
@@ -1316,7 +1559,8 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Section 80TTB</span>
-                                    <span class="label-sub">Interest on savings bank + FDs for Senior Citizens (Capped at ₹50,000)</span>
+                                    <span class="label-sub">Interest on savings bank + FDs for Senior Citizens (Capped
+                                        at ₹50,000)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="via-80ttb">₹0</span>
@@ -1330,22 +1574,28 @@
                 <!-- Tab: Schedule FA -->
                 <div id="tab-schedule-fa" class="tab-panel">
                     <div class="step-instruction">
-                        <p><strong>MANDATORY FOR FOREIGN SHARES/RSUs (e.g. US STOCKS)</strong>. Report in Schedule FA. All values in USD. Schedule FA follows the Calendar Year ending before the Financial Year (i.e. Calendar Year 2025 for FY 2025-26 filings).</p>
+                        <p><strong>MANDATORY FOR FOREIGN SHARES/RSUs & US BANK ACCOUNTS</strong>. Report in Schedule FA.
+                            All values in USD. Schedule FA follows the Calendar Year ending before the Financial Year
+                            (i.e. Calendar Year 2025 for FY 2025-26 filings). Automatically pre-populates based on uploaded files, but you can add bank accounts or other holdings manually.</p>
                     </div>
                     <div class="tax-table-card">
-                        <div class="table-header-bar">
-                            <span class="table-header-title">Schedule FA - Details of Foreign Assets (US Stocks/RSUs)</span>
+                        <div class="table-header-bar" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="table-header-title">Schedule FA - Details of Foreign Assets (US Stocks/Banks)</span>
+                            <button class="tab-btn" onclick="addFaRow()" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); margin: 0; padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+                                + Add Asset
+                            </button>
                         </div>
                         <div class="data-table-container">
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Asset Description</th>
-                                        <th>Broker</th>
-                                        <th>Peak Value (USD)</th>
-                                        <th>Closing Value (USD)</th>
-                                        <th>Dividends Received (USD)</th>
-                                        <th>Sale Proceeds (USD)</th>
+                                        <th style="width: 25%;">Asset Description</th>
+                                        <th style="width: 20%;">Broker / Institution</th>
+                                        <th style="width: 13%;">Peak Value (USD)</th>
+                                        <th style="width: 13%;">Closing Value (USD)</th>
+                                        <th style="width: 12%;">Dividends (USD)</th>
+                                        <th style="width: 12%;">Proceeds (USD)</th>
+                                        <th style="width: 5%; text-align: center;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="fa-table-body">
@@ -1359,7 +1609,8 @@
                 <!-- Tab: Form 67 & Relief -->
                 <div id="tab-form-67" class="tab-panel">
                     <div class="step-instruction">
-                        <p>For US Dividends and US bank interest, tax is withheld in the USA. Claim credit under Section 90 by filing <strong>Form 67</strong> before filing your tax return.</p>
+                        <p>For US Dividends and US bank interest, tax is withheld in the USA. Claim credit under Section
+                            90 by filing <strong>Form 67</strong> before filing your tax return.</p>
                     </div>
                     <div class="tax-table-card" style="margin-bottom: 2rem;">
                         <div class="table-header-bar">
@@ -1369,7 +1620,8 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Country Code & DTAA Articles</span>
-                                    <span class="label-sub">USA (Country code: 01), DTAA Articles: Article 10 (Dividends) & Article 11 (Interest)</span>
+                                    <span class="label-sub">USA (Country code: 01), DTAA Articles: Article 10
+                                        (Dividends) & Article 11 (Interest)</span>
                                 </div>
                                 <div class="row-value-area">
                                     <span class="row-val" id="relief-dtaa-article">USA - Article 10 & 11</span>
@@ -1418,12 +1670,232 @@
                             <div class="table-row">
                                 <div class="row-label">
                                     <span class="label-main">Foreign Tax Credit (FTC) Claimed (INR)</span>
-                                    <span class="label-sub">Relief allowed under Section 90 (lower of US tax or proportional Indian tax u/s 90)</span>
+                                    <span class="label-sub">Relief allowed under Section 90 (lower of US tax or
+                                        proportional Indian tax u/s 90)</span>
                                 </div>
                                 <div class="row-value-area">
-                                    <span class="row-val" id="relief-ftc-claimed" style="color: var(--success);">₹0</span>
+                                    <span class="row-val" id="relief-ftc-claimed"
+                                        style="color: var(--success);">₹0</span>
                                     <button class="btn-copy" onclick="copyVal('relief-ftc-claimed')">Copy</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule VDA (Crypto) -->
+                <div id="tab-schedule-vda" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>Schedule VDA: Virtual Digital Assets / Cryptocurrency trades are taxed at a flat <strong>30%
+                                rate</strong> on gains u/s 115BBH. No deductions for expenses or losses set-off are
+                            allowed.</p>
+                    </div>
+
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div class="card">
+                            <div class="card-title">VDA Gains Summary</div>
+                            <div class="regime-metric-row" style="margin-top: 1rem;">
+                                <span>Total Consideration (Proceeds)</span>
+                                <strong id="vda-summary-proceeds">₹0</strong>
+                            </div>
+                            <div class="regime-metric-row">
+                                <span>Total Cost of Acquisition</span>
+                                <strong id="vda-summary-cost">₹0</strong>
+                            </div>
+                            <div class="regime-metric-row"
+                                style="border-top: 1px solid var(--border-color); padding-top: 0.8rem; margin-top: 0.8rem;">
+                                <span>Net Taxable VDA Gains</span>
+                                <strong id="vda-summary-gains"
+                                    style="color: var(--success); font-size: 1.2rem;">₹0</strong>
+                            </div>
+                            <div class="regime-metric-row">
+                                <span>Flat VDA Tax Payable (30%)</span>
+                                <strong id="vda-summary-tax"
+                                    style="color: var(--warning); font-size: 1.2rem;">₹0</strong>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">Upload VDA Trades CSV</div>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label for="file_vda_trades">Crypto / VDA CSV File</label>
+                                <input type="file" id="file_vda_trades" class="form-control-file" accept=".csv">
+                                <small
+                                    style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 0.4rem; display: block;">
+                                    CSV headers: Symbol/Asset, Buy Date, Sell Date, Cost, Proceeds. Supports USD/INR.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Entries & Transaction Table -->
+                    <div class="tax-table-card">
+                        <div class="table-header-bar"
+                            style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="table-header-title">VDA Transactions & Manual Entry</span>
+                            <button class="tab-btn" onclick="addManualVdaRow()"
+                                style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary); border: none; border-radius: 4px; color: #fff; cursor: pointer;">+
+                                Add Trade</button>
+                        </div>
+                        <div style="overflow-x: auto; padding: 1rem;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left;"
+                                id="table-vda-entries">
+                                <thead>
+                                    <tr
+                                        style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem;">
+                                        <th style="padding: 0.8rem 0.5rem;">Asset / Symbol</th>
+                                        <th style="padding: 0.8rem 0.5rem;">Buy Date</th>
+                                        <th style="padding: 0.8rem 0.5rem;">Sell Date</th>
+                                        <th style="padding: 0.8rem 0.5rem; text-align: right;">Cost (INR)</th>
+                                        <th style="padding: 0.8rem 0.5rem; text-align: right;">Proceeds (INR)</th>
+                                        <th style="padding: 0.8rem 0.5rem; text-align: right;">Gain (INR)</th>
+                                        <th style="padding: 0.8rem 0.5rem; text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vda-entries-body">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule AL (Assets & Liabilities) -->
+                <div id="tab-schedule-al" class="tab-panel">
+                    <div class="step-instruction">
+                        <p>Schedule AL is legally required for taxpayers whose total income exceeds <strong>₹50
+                                Lakhs</strong>. Declare costs of all domestic immovable and movable assets, along with
+                            corresponding liabilities.</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                        <div>
+                            <!-- Immovable Property Section -->
+                            <div class="tax-table-card" style="margin-bottom: 1.5rem;">
+                                <div class="table-header-bar"
+                                    style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span class="table-header-title">A. Immovable Property (Land / Building)</span>
+                                    <button class="tab-btn" onclick="addAlImmovableRow()"
+                                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary); border: none; border-radius: 4px; color: #fff; cursor: pointer;">+
+                                        Add Property</button>
+                                </div>
+                                <div style="padding: 1rem; overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse;" id="table-al-immovable">
+                                        <thead>
+                                            <tr
+                                                style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-align: left;">
+                                                <th style="padding: 0.5rem;">Description / Address</th>
+                                                <th style="padding: 0.5rem;">Pin Code</th>
+                                                <th style="padding: 0.5rem; text-align: right;">Cost of Asset (INR)</th>
+                                                <th style="padding: 0.5rem; text-align: center;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="al-immovable-body">
+                                            <!-- Dynamic Property rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Movable Assets Section -->
+                            <div class="tax-table-card">
+                                <div class="table-header-bar">
+                                    <span class="table-header-title">B. Movable Assets (At Cost)</span>
+                                </div>
+                                <div style="padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div class="form-group">
+                                            <label for="al_bank_deposits">Total Bank Deposits / Balances (INR)</label>
+                                            <input type="number" id="al_bank_deposits" class="form-control"
+                                                placeholder="e.g. 500000" oninput="updateAlSummary()">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="al_shares_securities">Shares & Securities (INR Cost)</label>
+                                            <input type="number" id="al_shares_securities" class="form-control"
+                                                placeholder="e.g. 1500000" oninput="updateAlSummary()">
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div class="form-group">
+                                            <label for="al_insurance_policies">Insurance Policies (INR Cost)</label>
+                                            <input type="number" id="al_insurance_policies" class="form-control"
+                                                placeholder="e.g. 300000" oninput="updateAlSummary()">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="al_loans_given">Loans & Advances Given (INR)</label>
+                                            <input type="number" id="al_loans_given" class="form-control"
+                                                placeholder="e.g. 100000" oninput="updateAlSummary()">
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div class="form-group">
+                                            <label for="al_jewellery">Jewellery, Gold, Bullion (INR Cost)</label>
+                                            <input type="number" id="al_jewellery" class="form-control"
+                                                placeholder="e.g. 800000" oninput="updateAlSummary()">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="al_vehicles">Vehicles, Yachts, Aircrafts (INR Cost)</label>
+                                            <input type="number" id="al_vehicles" class="form-control"
+                                                placeholder="e.g. 1200000" oninput="updateAlSummary()">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Liabilities Section -->
+                            <div class="tax-table-card" style="margin-top: 1.5rem;">
+                                <div class="table-header-bar">
+                                    <span class="table-header-title">C. Liabilities in relation to assets above</span>
+                                </div>
+                                <div style="padding: 1.2rem;">
+                                    <div class="form-group">
+                                        <label for="al_liabilities">Total Liabilities / Outstanding Loans (INR)</label>
+                                        <input type="number" id="al_liabilities" class="form-control"
+                                            placeholder="e.g. 2000000" oninput="updateAlSummary()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Export & Summary -->
+                        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                            <div class="card">
+                                <div class="card-title">Schedule AL Summary</div>
+                                <div class="regime-metric-row" style="margin-top: 1rem;">
+                                    <span>Immovable Assets Total</span>
+                                    <span id="al-summary-immovable">₹0</span>
+                                </div>
+                                <div class="regime-metric-row">
+                                    <span>Movable Assets Total</span>
+                                    <span id="al-summary-movable">₹0</span>
+                                </div>
+                                <div class="regime-metric-row"
+                                    style="border-top: 1px solid var(--border-color); padding-top: 0.8rem; margin-top: 0.8rem;">
+                                    <span>Total Declared Assets</span>
+                                    <strong id="al-summary-total-assets" style="color: var(--success);">₹0</strong>
+                                </div>
+                                <div class="regime-metric-row">
+                                    <span>Total Liabilities</span>
+                                    <strong id="al-summary-liabilities" style="color: var(--warning);">₹0</strong>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">Portal-Ready Export</div>
+                                <p
+                                    style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; margin-top: 0.5rem; margin-bottom: 1.2rem;">
+                                    Export Schedule AL details in official schema format ready for upload to the Income
+                                    Tax e-filing portal.
+                                </p>
+                                <button class="btn-action" onclick="exportAlJson()"
+                                    style="width: 100%; margin-bottom: 0.8rem; background: var(--primary); padding: 0.8rem; border: none; border-radius: 6px; color:#fff; font-weight:600; cursor:pointer;">
+                                    📥 Export as JSON
+                                </button>
+                                <button class="btn-action" onclick="exportAlCsv()"
+                                    style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 0.8rem; border-radius: 6px; color:#fff; font-weight:600; cursor:pointer;">
+                                    📊 Export as CSV
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1439,41 +1911,391 @@
     </div>
 
     <script>
-        document.getElementById("btn-process").addEventListener("click", function() {
+        let globalProcessedData = null; // Store raw parsed data for popups
+
+        function showModal(title, html) {
+            document.getElementById("modal-title").textContent = title;
+            document.getElementById("modal-body-content").innerHTML = html;
+            document.getElementById("breakdown-modal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("breakdown-modal").style.display = "none";
+        }
+
+        function handleOverlayClick(e) {
+            if (e.target.id === "breakdown-modal") {
+                closeModal();
+            }
+        }
+
+        function showBreakdown(type) {
+            if (!globalProcessedData) {
+                alert("Please process your tax data first.");
+                return;
+            }
+
+            let title = "";
+            let html = "";
+
+            if (type === 'us-dividends') {
+                title = "US Dividends Breakdown";
+                const csvDivs = globalProcessedData.us_dividends_csv || [];
+                const official1042s = globalProcessedData.us_dividends_1042s || [];
+                const match = Math.abs(globalProcessedData.us_dividend_total -
+                    globalProcessedData.us_1042s_total) <= 10;
+
+                if (!match && csvDivs.length > 0 && official1042s.length > 0) {
+                    const totalCsv = csvDivs.reduce((acc, curr) => acc + (curr.amount_usd || 0), 0).toFixed(2);
+                    const total1042 = official1042s.reduce((acc, curr) => acc + (curr.amount_usd || 0), 0).toFixed(2);
+                    html += `
+                        <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); border: 1px solid var(--error); padding: 1rem; margin-bottom: 1.5rem; border-radius: 6px;">
+                            <div style="color: #fca5a5; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                                ⚠️ US Dividends Discrepancy Flagged
+                            </div>
+                            <p style="font-size: 0.8rem; color: #fecaca; margin-top: 0.5rem; line-height: 1.4; margin-bottom: 0;">
+                                The total dividends from the CSV statement ($${totalCsv}) do not match the total from Form 1042-S PDFs ($${total1042}).
+                                <br/><strong>Resolution:</strong> The calculator defaulted to using Form 1042-S as the source of truth, converting USD to INR using the TT Buying Rate as if all dividends were received on <strong>December 31st</strong>. The detailed CSV transactions below are for reconciliation reference only.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div style="margin-bottom: 1.2rem;">
+                            <p style="margin-bottom: 0.5rem; color: var(--text-secondary); line-height: 1.4;">
+                                <strong>Active Source:</strong> ${csvDivs.length > 0 ? 'US Dividends CSV statement (detailed date-by-date lookup)' : 'US Form 1042-S PDF files'}
+                            </p>
+                        </div>
+                    `;
+                }
+
+                if (csvDivs.length > 0) {
+                    html += `
+                        <h4 style="margin-bottom: 0.6rem; color: #fff; font-size: 0.9rem;">Detailed CSV Transactions</h4>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem;">
+                                    <th style="padding: 0.5rem 0.25rem;">Date</th>
+                                    <th style="padding: 0.5rem 0.25rem;">Symbol</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Gross USD</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Tax USD</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">TT Rate</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Gross INR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    let totalUsd = 0;
+                    let totalTax = 0;
+                    let totalInr = 0;
+                    csvDivs.forEach(r => {
+                        totalUsd += r.amount_usd || 0;
+                        totalTax += r.withholding_usd || 0;
+                        totalInr += r.amount_inr || 0;
+                        html += `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.8rem;">
+                                <td style="padding: 0.5rem 0.25rem;">${r.date}</td>
+                                <td style="padding: 0.5rem 0.25rem; font-weight:600; color:#fff;">${r.symbol || "UNKNOWN"}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">$${(r.amount_usd || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">$${(r.withholding_usd || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">${(r.rate_used || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace; color:var(--success); font-weight:600;">${formatINR(r.amount_inr || 0)}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                            <tr style="font-weight: 600; color: #fff; font-size: 0.8rem; background: rgba(255,255,255,0.02);">
+                                <td style="padding: 0.6rem 0.25rem;" colspan="2">Total CSV Sum</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace;">$${totalUsd.toFixed(2)}</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace;">$${totalTax.toFixed(2)}</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right;">-</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace; color:var(--success); font-weight: 600;">${formatINR(totalInr)}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    html += `<p style="color: var(--text-secondary); margin-bottom: 1.5rem;">No detailed CSV dividends loaded.</p>`;
+                }
+
+                if (official1042s.length > 0) {
+                    html += `
+                        <h4 style="margin-bottom: 0.6rem; color: #fff; font-size: 0.9rem;">Official US Form 1042-S PDFs</h4>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem;">
+                                    <th style="padding: 0.5rem 0.25rem;">File Source</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Gross USD</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Tax Withheld USD</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Gross INR ${!match ? '(at Dec 31 rate)' : ''}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    let total1042sUsd = 0;
+                    let total1042sTax = 0;
+                    let total1042sInr = 0;
+                    official1042s.forEach(r => {
+                        total1042sUsd += r.amount_usd || 0;
+                        total1042sTax += r.withholding_usd || 0;
+                        total1042sInr += r.amount_inr || 0;
+                        html += `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.8rem; color: var(--text-secondary);">
+                                <td style="padding: 0.5rem 0.25rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.source || "Form 1042-S"}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">$${(r.amount_usd || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">$${(r.withholding_usd || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">${formatINR(r.amount_inr || 0)}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                            <tr style="font-weight: 600; color: var(--text-secondary); font-size: 0.8rem; background: rgba(255,255,255,0.01);">
+                                <td style="padding: 0.6rem 0.25rem;">Total 1042-S</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace;">$${total1042sUsd.toFixed(2)}</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace;">$${total1042sTax.toFixed(2)}</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace;">${formatINR(total1042sInr)}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    `;
+                }
+            }
+            else if (type === 'us-interest') {
+                title = "US Bank Interest Breakdown";
+                const usInterest = globalProcessedData.us_interest || [];
+
+                if (usInterest.length > 0) {
+                    html += `
+                        <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                            US Bank interest extracted page-by-page from US Form 1042-S PDF files (Income Code 01/29/30).
+                        </p>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem;">
+                                    <th style="padding: 0.5rem 0.25rem;">File Source</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Gross USD</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Tax Withheld USD</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">TT Rate</th>
+                                    <th style="padding: 0.5rem 0.25rem; text-align: right;">Gross INR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    let totalUsd = 0;
+                    let totalTax = 0;
+                    let totalInr = 0;
+                    usInterest.forEach(r => {
+                        totalUsd += r.amount_usd || 0;
+                        totalTax += r.withholding_usd || 0;
+                        totalInr += r.amount_inr || 0;
+                        html += `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.8rem;">
+                                <td style="padding: 0.5rem 0.25rem; color:#fff; font-weight:600;">${r.source || "Form 1042-S"}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">$${(r.amount_usd || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">$${(r.withholding_usd || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace;">${(r.rate_used || 0).toFixed(2)}</td>
+                                <td style="padding: 0.5rem 0.25rem; text-align: right; font-family:monospace; color:var(--success); font-weight:600;">${formatINR(r.amount_inr || 0)}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                            <tr style="font-weight: 600; color: #fff; font-size: 0.8rem; background: rgba(255,255,255,0.02);">
+                                <td style="padding: 0.6rem 0.25rem;">Total Sum</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace;">$${totalUsd.toFixed(2)}</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace;">$${totalTax.toFixed(2)}</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right;">-</td>
+                                <td style="padding: 0.6rem 0.25rem; text-align: right; font-family:monospace; color:var(--success); font-weight: 600;">${formatINR(totalInr)}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    html += `<p style="color: var(--text-secondary);">No US bank interest found in Form 1042-S files.</p>`;
+                }
+            }
+            else if (type === 'salary-17-1') {
+                title = "Salary Section 17(1) Breakdown";
+                const f16 = globalProcessedData.form16 || {};
+                const basic = f16.gross_salary_17_1 || 0;
+
+                html += `
+                    <p style="margin-bottom: 1.2rem; color: var(--text-secondary); line-height: 1.4;">
+                        Basic pay, bonus, and allowances reported under section 17(1) from Form 16 PDF.
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Source Document</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">Form 16 Certificate</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Form 16 Section</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">Gross Salary (a) - Section 17(1)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; color: #fff;">
+                                <td style="padding: 0.8rem 0;">Salary Amount</td>
+                                <td style="padding: 0.8rem 0; text-align: right; color: var(--success); font-size: 1.1rem;">${formatINR(basic)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+            else if (type === 'perquisites-17-2') {
+                title = "Perquisites Section 17(2) Breakdown";
+                const f16 = globalProcessedData.form16 || {};
+                const perqs = f16.perquisites_17_2 || 0;
+
+                html += `
+                    <p style="margin-bottom: 1.2rem; color: var(--text-secondary); line-height: 1.4;">
+                        Value of perquisites under section 17(2) from Form 16 PDF. This primarily includes the value of vested RSUs during the financial year.
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Source Document</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">Form 16 Certificate</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Form 16 Section</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">Perquisites (b) - Section 17(2)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; color: #fff;">
+                                <td style="padding: 0.8rem 0;">Perquisite Value</td>
+                                <td style="padding: 0.8rem 0; text-align: right; color: var(--success); font-size: 1.1rem;">${formatINR(perqs)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+            else if (type === 'profits-17-3') {
+                title = "Profits in Lieu Section 17(3) Breakdown";
+                const f16 = globalProcessedData.form16 || {};
+                const profits = f16.profits_lieu_17_3 || 0;
+
+                html += `
+                    <p style="margin-bottom: 1.2rem; color: var(--text-secondary); line-height: 1.4;">
+                        Profits in lieu of salary under section 17(3) from Form 16 PDF.
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Source Document</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">Form 16 Certificate</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Form 16 Section</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">Profits in lieu (c) - Section 17(3)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; color: #fff;">
+                                <td style="padding: 0.8rem 0;">Amount</td>
+                                <td style="padding: 0.8rem 0; text-align: right; color: var(--success); font-size: 1.1rem;">${formatINR(profits)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+            else if (type === 'fd-interest') {
+                title = "FD Interest Breakdown";
+                const fd_int = globalProcessedData.ais.fd_interest || 0;
+                html += `
+                    <p style="margin-bottom: 1.2rem; color: var(--text-secondary); line-height: 1.4;">
+                        Interest earned on Fixed Deposits / Recurring Deposits reported in the AIS / TIS PDF.
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Source Document</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">AIS / TIS Statement</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; color: #fff;">
+                                <td style="padding: 0.8rem 0;">Total FD Interest</td>
+                                <td style="padding: 0.8rem 0; text-align: right; color: var(--success); font-size: 1.1rem;">${formatINR(fd_int)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+            else if (type === 'savings-interest') {
+                title = "Savings Bank Interest Breakdown";
+                const sv_int = globalProcessedData.ais.savings_interest || 0;
+                html += `
+                    <p style="margin-bottom: 1.2rem; color: var(--text-secondary); line-height: 1.4;">
+                        Interest earned from savings accounts reported in the AIS / TIS PDF.
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Source Document</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">AIS / TIS Statement</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; color: #fff;">
+                                <td style="padding: 0.8rem 0;">Total Savings Interest</td>
+                                <td style="padding: 0.8rem 0; text-align: right; color: var(--success); font-size: 1.1rem;">${formatINR(sv_int)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+            else if (type === 'domestic-dividends') {
+                title = "Domestic Dividends Breakdown";
+                const div_dom = globalProcessedData.ais.domestic_dividends || 0;
+                html += `
+                    <p style="margin-bottom: 1.2rem; color: var(--text-secondary); line-height: 1.4;">
+                        Dividends received from domestic (Indian) companies reported in the AIS / TIS PDF.
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                <td style="padding: 0.6rem 0; color: var(--text-secondary);">Source Document</td>
+                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">AIS / TIS Statement</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; color: #fff;">
+                                <td style="padding: 0.8rem 0;">Total Domestic Dividends</td>
+                                <td style="padding: 0.8rem 0; text-align: right; color: var(--success); font-size: 1.1rem;">${formatINR(div_dom)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            showModal(title, html);
+        }
+
+        document.getElementById("btn-process").addEventListener("click", function () {
             const panEl = document.getElementById("pan");
             const dobEl = document.getElementById("dob");
-            
+
             const panVal = panEl.value.trim();
             const dobVal = dobEl.value.trim();
-            
+
             // Validation matches standard Indian PAN and DOB format
             const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i;
             const dobRegex = /^[0-9]{8}$/;
-            
+
             let hasErrors = false;
-            
+
             if (!panRegex.test(panVal)) {
                 panEl.classList.add("is-invalid");
                 hasErrors = true;
             } else {
                 panEl.classList.remove("is-invalid");
             }
-            
+
             if (!dobRegex.test(dobVal)) {
                 dobEl.classList.add("is-invalid");
                 hasErrors = true;
             } else {
                 dobEl.classList.remove("is-invalid");
             }
-            
+
             if (hasErrors) {
                 alert("Please check the mandatory fields:\n- PAN must be 10 characters (e.g. ABCDE1234F)\n- Date of Birth must be 8 digits in DDMMYYYY format (e.g. 31121990)");
                 return;
             }
-            
+
             // Show loader
             document.getElementById("loader").style.display = "flex";
-            
+
             const formData = new FormData();
             formData.append("pan", panVal);
             formData.append("dob", dobVal);
@@ -1484,13 +2306,24 @@
             formData.append("custom_80c", document.getElementById("custom_80c").value);
             formData.append("custom_80d", document.getElementById("custom_80d").value);
             formData.append("advance_tax", document.getElementById("advance_tax").value);
+            formData.append("hra_basic", document.getElementById("hra_basic").value);
+            formData.append("hra_received", document.getElementById("hra_received").value);
+            formData.append("hra_rent", document.getElementById("hra_rent").value);
+            formData.append("hra_metro", document.getElementById("hra_metro").value);
 
             // Append files
             const f16 = document.getElementById("file_form16").files[0];
             if (f16) formData.append("form16", f16);
 
-            const ais = document.getElementById("file_ais_tis").files[0];
-            if (ais) formData.append("ais_tis", ais);
+            const aisFiles = document.getElementById("file_ais_tis").files;
+            for (let i = 0; i < aisFiles.length; i++) {
+                const file = aisFiles[i];
+                if (file.name.toLowerCase().endsWith(".pdf")) {
+                    formData.append("ais_tis", file);
+                } else if (file.name.toLowerCase().endsWith(".csv")) {
+                    formData.append("ais_files", file);
+                }
+            }
 
             const indStock = document.getElementById("file_indian_stock").files[0];
             if (indStock) formData.append("indian_stock", indStock);
@@ -1498,10 +2331,20 @@
             const usStock = document.getElementById("file_us_stock").files[0];
             if (usStock) formData.append("us_stock", usStock);
 
+            const usDividends = document.getElementById("file_us_dividends").files[0];
+            if (usDividends) formData.append("us_dividends_csv", usDividends);
+
             const us1042s = document.getElementById("file_us_1042s").files;
             for (let i = 0; i < us1042s.length; i++) {
                 formData.append("us_1042s", us1042s[i]);
             }
+
+            const vdaFile = document.getElementById("file_vda_trades").files[0];
+            if (vdaFile) formData.append("vda_trades_csv", vdaFile);
+            formData.append("vda_trades_json", JSON.stringify(getVdaData()));
+            formData.append("schedule_al", JSON.stringify(getAlData()));
+            formData.append("schedule_fa", JSON.stringify(getFaData()));
+            formData.append("cg_exemptions", JSON.stringify(getCgExemptions()));
 
             // Update badge for FY
             document.getElementById("active-fy-badge").querySelector("span").textContent = "FY " + document.getElementById("fy").value;
@@ -1510,19 +2353,76 @@
                 method: "POST",
                 body: formData
             })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById("loader").style.display = "none";
-                if (data.success) {
-                    renderDashboard(data);
-                } else {
-                    alert("Error: " + data.error);
-                }
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("loader").style.display = "none";
+                    if (data.success) {
+                        globalProcessedData = data.parsed_raw;
+                        renderDashboard(data);
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("loader").style.display = "none";
+                    alert("Error connecting to backend: " + err);
+                });
+        });
+
+        document.getElementById("btn-quick-load").addEventListener("click", function () {
+            const panEl = document.getElementById("pan");
+            const dobEl = document.getElementById("dob");
+            const panVal = panEl.value.trim() || "BCQPK7653C";
+            const dobVal = dobEl.value.trim() || "28051987";
+
+            panEl.value = panVal;
+            dobEl.value = dobVal;
+
+            document.getElementById("loader").style.display = "flex";
+
+            const formData = new FormData();
+            formData.append("pan", panVal);
+            formData.append("dob", dobVal);
+            formData.append("form16_password", document.getElementById("form16_password").value);
+            formData.append("fy", document.getElementById("fy").value);
+            formData.append("home_loan_interest", document.getElementById("home_loan_interest").value);
+            formData.append("home_loan_principal", document.getElementById("home_loan_principal").value);
+            formData.append("custom_80c", document.getElementById("custom_80c").value);
+            formData.append("custom_80d", document.getElementById("custom_80d").value);
+            formData.append("advance_tax", document.getElementById("advance_tax").value);
+            formData.append("hra_basic", document.getElementById("hra_basic").value);
+            formData.append("hra_received", document.getElementById("hra_received").value);
+            formData.append("hra_rent", document.getElementById("hra_rent").value);
+            formData.append("hra_metro", document.getElementById("hra_metro").value);
+
+            const vdaFile = document.getElementById("file_vda_trades").files[0];
+            if (vdaFile) formData.append("vda_trades_csv", vdaFile);
+            formData.append("vda_trades_json", JSON.stringify(getVdaData()));
+            formData.append("schedule_al", JSON.stringify(getAlData()));
+            formData.append("schedule_fa", JSON.stringify(getFaData()));
+            formData.append("cg_exemptions", JSON.stringify(getCgExemptions()));
+
+            // Update badge for FY
+            document.getElementById("active-fy-badge").querySelector("span").textContent = "FY " + document.getElementById("fy").value;
+
+            fetch("/api/quick-load", {
+                method: "POST",
+                body: formData
             })
-            .catch(err => {
-                document.getElementById("loader").style.display = "none";
-                alert("Error connecting to backend: " + err);
-            });
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("loader").style.display = "none";
+                    if (data.success) {
+                        globalProcessedData = data.parsed_raw;
+                        renderDashboard(data);
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("loader").style.display = "none";
+                    alert("Error connecting to backend: " + err);
+                });
         });
 
         function formatINR(val) {
@@ -1545,7 +2445,7 @@
             // Deactivate all
             document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
             document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.remove("active"));
-            
+
             // Activate current
             const clickedBtn = Array.from(document.querySelectorAll(".tab-btn")).find(btn => btn.getAttribute("onclick").includes(tabId));
             if (clickedBtn) clickedBtn.classList.add("active");
@@ -1555,10 +2455,10 @@
         function copyVal(id) {
             const el = document.getElementById(id);
             if (!el) return;
-            
+
             // Extract numerical value by stripping symbol, commas, spaces
             let text = el.innerText.replace(/[₹$,]/g, "").trim();
-            
+
             navigator.clipboard.writeText(text).then(() => {
                 // Find copy button sibling
                 const btn = el.nextElementSibling;
@@ -1597,7 +2497,7 @@
             const results = data.results;
             const warnings = data.warnings;
             const hasFiles = data.has_files;
-            
+
             // Render warnings
             const warningsBox = document.getElementById("warnings-container");
             if (warnings && warnings.length > 0) {
@@ -1674,7 +2574,7 @@
             let oldDueVal = results.regimes.old.final_due_or_refund;
             document.getElementById("old-due-refund").innerText = formatINR(oldDueVal) + (oldDueVal < 0 ? " (Refund)" : " (Due)");
             document.getElementById("old-due-refund").style.color = oldDueVal < 0 ? "var(--success)" : "var(--danger)";
-            
+
             // Calculate savings and render recommendation card
             const diff = Math.abs(results.regimes.old.net_tax_payable - results.regimes.new.net_tax_payable);
             const savingStr = formatINR(diff);
@@ -1706,7 +2606,7 @@
             const stdNew = newR.gross_salary > 0 ? (activeFy === "2025-26" ? 75000 : 50000) : 0;
             const stdOld = oldR.gross_salary > 0 ? 50000 : 0;
             const exemptNew = 0;
-            const exemptOld = rawF16.allowances_exempt_sec_10 || 0;
+            const exemptOld = oldR.exempt_allowances || 0;
             const profNew = 0;
             const profOld = rawF16.professional_tax_16_ii || 0;
             const hpNew = 0;
@@ -1727,7 +2627,7 @@
                 const isOldOpt = opt === "old";
                 const oldStr = formatINR(oldVal);
                 const newStr = formatINR(newVal);
-                
+
                 const oldCopyBtn = isOldOpt ? `<button class="btn-copy" onclick="copyValueText('${oldVal}')">Copy</button>` : "";
                 const newCopyBtn = !isOldOpt ? `<button class="btn-copy" onclick="copyValueText('${newVal}')">Copy</button>` : "";
 
@@ -1737,16 +2637,16 @@
                             <div style="font-weight: 600; color: #fff; font-size: 0.8rem;">${label}</div>
                             <div style="font-size: 0.65rem; color: var(--text-secondary);">${sub}</div>
                         </td>
-                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: ${isOldOpt ? '#fff' : 'var(--text-secondary)'}; font-weight: ${isOldOpt ? '700' : 'normal'};">
-                            <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
-                                <span>${oldStr}</span>
-                                ${oldCopyBtn}
-                            </div>
-                        </td>
                         <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: ${!isOldOpt ? '#fff' : 'var(--text-secondary)'}; font-weight: ${!isOldOpt ? '700' : 'normal'};">
                             <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
                                 <span>${newStr}</span>
                                 ${newCopyBtn}
+                            </div>
+                        </td>
+                        <td style="text-align: right; font-family: monospace; font-size: 0.85rem; color: ${isOldOpt ? '#fff' : 'var(--text-secondary)'}; font-weight: ${isOldOpt ? '700' : 'normal'};">
+                            <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
+                                <span>${oldStr}</span>
+                                ${oldCopyBtn}
                             </div>
                         </td>
                     </tr>
@@ -1761,7 +2661,8 @@
             compBody.innerHTML += makeCompRow("Less: Professional Tax", "Section 16(ii) employment tax (Nil in New)", profOld, profNew, optimal);
             compBody.innerHTML += makeCompRow("Net Salary Income", "Taxable salary components", oldR.net_salary, newR.net_salary, optimal);
             compBody.innerHTML += makeCompRow("House Property Income/Loss", "Section 24(b) interest deduction (Nil in New)", hpOld, hpNew, optimal);
-            compBody.innerHTML += makeCompRow("Domestic & Other Sources Slab Income", "Savings/FD interest, domestic dividends, EPF", oldR.other_sources_income - total_us_dividends_inr - total_us_interest_inr, newR.other_sources_income - total_us_dividends_inr - total_us_interest_inr, optimal);
+            compBody.innerHTML += makeCompRow("Domestic & Other Sources Slab Income", "Savings/FD interest, domestic dividends, EPF", oldR.other_sources_income - total_us_dividends_inr - total_us_interest_inr - (oldR.tax_refund_interest || 0), newR.other_sources_income - total_us_dividends_inr - total_us_interest_inr - (newR.tax_refund_interest || 0), optimal);
+            compBody.innerHTML += makeCompRow("Add: Last Year Tax Refund Interest", "Interest received on last year's refund u/s 244A (Taxable)", oldR.tax_refund_interest || 0, newR.tax_refund_interest || 0, optimal);
             compBody.innerHTML += makeCompRow("US Dividend Income", "Dividends reported on Form 1042-S u/s 56(1)", total_us_dividends_inr, total_us_dividends_inr, optimal);
             compBody.innerHTML += makeCompRow("US Bank Interest Income", "Interest reported on Form 1042-S u/s 56(1)", total_us_interest_inr, total_us_interest_inr, optimal);
             compBody.innerHTML += makeCompRow("Gross Total Income", "Slabs Income + HP + Other Sources", oldR.net_salary + oldR.house_property_income + oldR.other_sources_income, newR.net_salary + newR.house_property_income + newR.other_sources_income, optimal);
@@ -1772,31 +2673,32 @@
             compBody.innerHTML += makeCompRow("Total Chapter VI-A Deductions", "Sum of 80C, 80D, 80TTA/80TTB deductions", oldR.deductions.total, newR.deductions.total, optimal);
             compBody.innerHTML += makeCompRow("Taxable Slab Income", "Income taxed at slab rates", oldR.taxable_slab_income, newR.taxable_slab_income, optimal);
             compBody.innerHTML += makeCompRow("Special Rate Capital Gains", "Gains taxed at special rates (111A/112A/112)", oldR.special_cg_income, newR.special_cg_income, optimal);
-            compBody.innerHTML += makeCompRow("Total Taxable Income", "Net taxable slab + special capital gains", oldR.total_taxable_income, newR.total_taxable_income, optimal);
+            compBody.innerHTML += makeCompRow("Virtual Digital Assets (VDA) Gains", "Gains from cryptocurrency trades taxed u/s 115BBH", oldR.vda_income || 0, newR.vda_income || 0, optimal);
+            compBody.innerHTML += makeCompRow("Total Taxable Income", "Net taxable slab + special capital gains + VDA gains", oldR.total_taxable_income, newR.total_taxable_income, optimal);
             compBody.innerHTML += makeCompRow("Income Tax on Slab Income", "Tax calculated at slab rates u/s 87A rebate", oldR.slab_tax, newR.slab_tax, optimal);
             compBody.innerHTML += makeCompRow("Income Tax on Capital Gains", "Special tax on stock sales", oldR.cg_tax.total, newR.cg_tax.total, optimal);
-            compBody.innerHTML += makeCompRow("Basic Tax Payable", "Slab tax + Capital gains tax", oldR.basic_tax, newR.basic_tax, optimal);
-            compBody.innerHTML += makeCompRow("Add: Cess", "Health & Education Cess at 4%", oldR.cess, newR.cess, optimal);
-            compBody.innerHTML += makeCompRow("Total Tax Before Relief", "Basic tax + Cess", oldR.total_tax_before_relief, newR.total_tax_before_relief, optimal);
+            compBody.innerHTML += makeCompRow("Income Tax on VDA (Flat 30%)", "Tax on Virtual Digital Assets gains u/s 115BBH", oldR.vda_tax || 0, newR.vda_tax || 0, optimal);
+            compBody.innerHTML += makeCompRow("Basic Tax Payable", "Slab tax + Capital gains tax + VDA tax", oldR.basic_tax, newR.basic_tax, optimal);
+            compBody.innerHTML += makeCompRow("Add: Surcharge", "Surcharge on basic tax (applicable for income > 50L)", oldR.surcharge || 0, newR.surcharge || 0, optimal);
+            compBody.innerHTML += makeCompRow("Add: Cess", "Health & Education Cess at 4% on tax + surcharge", oldR.cess, newR.cess, optimal);
+            compBody.innerHTML += makeCompRow("Total Tax Before Relief", "Basic tax + Surcharge + Cess", oldR.total_tax_before_relief, newR.total_tax_before_relief, optimal);
             compBody.innerHTML += makeCompRow("Less: Double Tax Relief (Sec 90)", "Foreign Tax Credit u/s DTAA for US dividends & interest", oldR.ftc_relief, newR.ftc_relief, optimal);
             compBody.innerHTML += makeCompRow("Net Tax Payable", "Tax liability after DTAA relief", oldR.net_tax_payable, newR.net_tax_payable, optimal);
+            compBody.innerHTML += makeCompRow("Add: Interest u/s 234B", "Interest for default in payment of advance tax", oldR.interest_234b || 0, newR.interest_234b || 0, optimal);
+            compBody.innerHTML += makeCompRow("Add: Interest u/s 234C", "Interest for deferment of advance tax", oldR.interest_234c || 0, newR.interest_234c || 0, optimal);
+            compBody.innerHTML += makeCompRow("Total Tax, Surcharge & Interest", "Total net tax liability + interest payable", oldR.total_tax_surcharge_interest || oldR.net_tax_payable, newR.total_tax_surcharge_interest || newR.net_tax_payable, optimal);
             compBody.innerHTML += makeCompRow("Less: TDS Deducted", "Tax deducted at source u/s Form 16", oldR.tds_credited, newR.tds_credited, optimal);
             compBody.innerHTML += makeCompRow("Less: Advance Tax Paid", "Advance tax paid during the financial year", oldR.advance_tax_paid, newR.advance_tax_paid, optimal);
-            
+            compBody.innerHTML += makeCompRow("Add: Last Year Tax Demand/Due", "Outstanding demand or tax due from last year", oldR.tax_due_demand || 0, newR.tax_due_demand || 0, optimal);
+
             const finalOld = oldR.final_due_or_refund;
             const finalNew = newR.final_due_or_refund;
-            
+
             compBody.innerHTML += `
                 <tr style="border-top: 2px solid var(--border-color); background: rgba(255, 255, 255, 0.02);">
                     <td>
                         <div style="font-weight: 800; color: #fff; font-size: 0.85rem;">Final Tax Status</div>
                         <div style="font-size: 0.65rem; color: var(--text-secondary);">Balance Due (+) / Refund (-)</div>
-                    </td>
-                    <td style="text-align: right; font-family: monospace; font-size: 0.95rem; color: ${finalOld < 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 800;">
-                        <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
-                            <span>${finalOld < 0 ? '-' : '+'}${formatINR(Math.abs(finalOld))}</span>
-                            ${optimal === 'old' ? `<button class="btn-copy" onclick="copyValueText('${Math.abs(finalOld)}')">Copy</button>` : ''}
-                        </div>
                     </td>
                     <td style="text-align: right; font-family: monospace; font-size: 0.95rem; color: ${finalNew < 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 800;">
                         <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
@@ -1804,14 +2706,20 @@
                             ${optimal === 'new' ? `<button class="btn-copy" onclick="copyValueText('${Math.abs(finalNew)}')">Copy</button>` : ''}
                         </div>
                     </td>
+                    <td style="text-align: right; font-family: monospace; font-size: 0.95rem; color: ${finalOld < 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 800;">
+                        <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: flex-end; width: 100%;">
+                            <span>${finalOld < 0 ? '-' : '+'}${formatINR(Math.abs(finalOld))}</span>
+                            ${optimal === 'old' ? `<button class="btn-copy" onclick="copyValueText('${Math.abs(finalOld)}')">Copy</button>` : ''}
+                        </div>
+                    </td>
                 </tr>
             `;
-            
+
             // Overview Mini Cards
-            document.getElementById("ov-gross-income").innerText = formatINR(optimalData.gross_salary + optimalData.other_sources_income + optimalData.special_cg_income);
+            document.getElementById("ov-gross-income").innerText = formatINR(optimalData.gross_salary + optimalData.other_sources_income + optimalData.special_cg_income + (optimalData.vda_income || 0));
             document.getElementById("ov-deductions").innerText = formatINR(optimalData.deductions.total + (optimal === "new" ? (results.regimes.new.gross_salary > 0 ? (activeFy === "2025-26" ? 75000 : 50000) : 0) : 50000));
-            document.getElementById("ov-tax-payable").innerText = formatINR(optimalData.net_tax_payable);
-            
+            document.getElementById("ov-tax-payable").innerText = formatINR(optimalData.total_tax_surcharge_interest || optimalData.net_tax_payable);
+
             document.getElementById("active-regime-indicator").innerText = optimal === "new" ? "New Regime Active" : "Old Regime Active";
 
             // Slabs table
@@ -1840,7 +2748,8 @@
             document.getElementById("s-salary-17-1").innerText = formatINR(rawF16.gross_salary_17_1 || 0);
             document.getElementById("s-perquisites-17-2").innerText = formatINR(rawF16.perquisites_17_2 || 0);
             document.getElementById("s-profits-17-3").innerText = formatINR(rawF16.profits_lieu_17_3 || 0);
-            document.getElementById("s-exempt-10").innerText = formatINR(optimal === "old" ? (rawF16.allowances_exempt_sec_10 || 0) : 0);
+            document.getElementById("s-exempt-10").innerText = formatINR(optimal === "old" ? (oldR.exempt_allowances || 0) : 0);
+            document.getElementById("s-hra-exempt").innerText = formatINR(optimal === "old" ? (oldR.hra_exempt || 0) : 0);
             document.getElementById("s-std-ded").innerText = formatINR(optimal === "new" ? (optimalData.gross_salary > 0 ? (activeFy === "2025-26" ? 75000 : 50000) : 0) : 50000);
             document.getElementById("s-prof-tax").innerText = formatINR(optimal === "old" ? (rawF16.professional_tax_16_ii || 0) : 0);
 
@@ -1863,6 +2772,27 @@
             document.getElementById("cg-copy-ltcg-listed").innerText = formatINR(cg.net_gains.ltcg_listed);
             document.getElementById("cg-copy-ltcg-unlisted").innerText = formatINR(cg.net_gains.ltcg_unlisted);
             document.getElementById("cg-copy-stcg-unlisted").innerText = formatINR(cg.net_gains.stcg_unlisted);
+
+            // Update exemptions labels
+            const exCategory = cg.exemptions_by_category || {};
+            const listedEx = exCategory.LTCG_Listed || 0;
+            const unlistedEx = exCategory.LTCG_Unlisted || 0;
+            
+            const listedLabel = document.getElementById("cg-exemptions-listed-label");
+            if (listedEx > 0) {
+                listedLabel.innerText = "Exemptions claimed (Sec 54/54EC/54F): - " + formatINR(listedEx);
+                listedLabel.style.display = "block";
+            } else {
+                listedLabel.style.display = "none";
+            }
+            
+            const unlistedLabel = document.getElementById("cg-exemptions-unlisted-label");
+            if (unlistedEx > 0) {
+                unlistedLabel.innerText = "Exemptions claimed (Sec 54/54EC/54F): - " + formatINR(unlistedEx);
+                unlistedLabel.style.display = "block";
+            } else {
+                unlistedLabel.style.display = "none";
+            }
 
             // Transactions Table
             const txBody = document.getElementById("transactions-table-body");
@@ -1903,30 +2833,27 @@
                 // If there's AIS data parsed
             }
 
-            // Deductions
-            document.getElementById("via-80c").innerText = formatINR(optimalData.deductions["80C"]);
-            document.getElementById("via-80d").innerText = formatINR(optimalData.deductions["80D"]);
-            document.getElementById("via-80tta").innerText = formatINR(optimalData.deductions["80TTA"] || 0);
-            document.getElementById("via-80ttb").innerText = formatINR(optimalData.deductions["80TTB"] || 0);
+            // Deductions (Always display Old Regime calculations for visibility u/s Schedule VI-A)
+            const oldDeductions = results.regimes.old.deductions;
+            document.getElementById("via-80c").innerText = formatINR(oldDeductions["80C"] || 0);
+            document.getElementById("via-80d").innerText = formatINR(oldDeductions["80D"] || 0);
+            document.getElementById("via-80tta").innerText = formatINR(oldDeductions["80TTA"] || 0);
+            document.getElementById("via-80ttb").innerText = formatINR(oldDeductions["80TTB"] || 0);
 
             // Schedule FA Table
             const faBody = document.getElementById("fa-table-body");
             faBody.innerHTML = "";
             if (results.schedule_fa && results.schedule_fa.length > 0) {
                 results.schedule_fa.forEach(row => {
-                    faBody.innerHTML += `
-                        <tr>
-                            <td style="font-weight:600; color:#fff;">${row.asset_description}</td>
-                            <td>${row.institution_name}</td>
-                            <td style="font-family:monospace;">${formatUSD(row.peak_value_usd)}</td>
-                            <td style="font-family:monospace;">${formatUSD(row.closing_value_usd)}</td>
-                            <td style="font-family:monospace;">${formatUSD(row.gross_interest_dividend_usd)}</td>
-                            <td style="font-family:monospace;">${formatUSD(row.proceeds_from_sale_usd)}</td>
-                        </tr>
-                    `;
+                    addFaRow(
+                        row.asset_description,
+                        row.institution_name,
+                        row.peak_value_usd,
+                        row.closing_value_usd,
+                        row.gross_interest_dividend_usd,
+                        row.proceeds_from_sale_usd
+                    );
                 });
-            } else {
-                faBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 1.5rem; color:var(--text-secondary);">No US foreign assets / holdings processed.</td></tr>`;
             }
 
             // Form 67 & Double Tax Relief
@@ -1939,7 +2866,404 @@
             if (f67.dtaa_article) {
                 document.getElementById("relief-dtaa-article").innerText = f67.country + " - " + f67.dtaa_article;
             }
+
+            // Render VDA / Crypto
+            renderVda(data.parsed_raw.vda_trades || []);
+
+            // Render Schedule AL
+            renderAl(data.parsed_raw.schedule_al || {});
+
+            // Pre-fill HRA Calculator inputs
+            const hra = data.parsed_raw.hra_inputs || {};
+            document.getElementById("hra_basic").value = hra.hra_basic || "";
+            document.getElementById("hra_received").value = hra.hra_received || "";
+            document.getElementById("hra_rent").value = hra.hra_rent || "";
+            document.getElementById("hra_metro").value = hra.hra_metro !== undefined ? String(hra.hra_metro) : "false";
+
+            // Render Capital Gains Exemptions
+            renderCgExemptions(data.parsed_raw.cg_exemptions || []);
+        }
+
+        function renderCgExemptions(exemptions) {
+            const tbody = document.getElementById("cg-exemptions-body");
+            tbody.innerHTML = "";
+            if (!exemptions) return;
+            exemptions.forEach(ex => {
+                addCgExemptionRow(ex.section, ex.applied_to, ex.reinvestment_amount, ex.net_consideration);
+            });
+        }
+
+        // --- Schedule VDA (Crypto) Logic ---
+        function addManualVdaRow(symbol = "", buyDate = "", sellDate = "", cost = "", proceeds = "") {
+            const tbody = document.getElementById("vda-entries-body");
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+            tr.innerHTML = `
+                <td style="padding: 0.5rem;"><input type="text" class="vda-symbol form-control" style="padding: 0.3rem; font-size:0.8rem; min-width: 80px;" value="${symbol}" placeholder="e.g. BTC"></td>
+                <td style="padding: 0.5rem;"><input type="date" class="vda-buy-date form-control" style="padding: 0.3rem; font-size:0.8rem;" value="${buyDate}"></td>
+                <td style="padding: 0.5rem;"><input type="date" class="vda-sell-date form-control" style="padding: 0.3rem; font-size:0.8rem;" value="${sellDate}"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="vda-cost form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${cost}" placeholder="0" oninput="calculateRowGain(this)"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="vda-proceeds form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${proceeds}" placeholder="0" oninput="calculateRowGain(this)"></td>
+                <td style="padding: 0.5rem; text-align:right; font-family:monospace; font-weight:600; color:var(--success);" class="vda-gain">₹0</td>
+                <td style="padding: 0.5rem; text-align:center;">
+                    <button class="btn-copy" style="background:#ef4444; border:none; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="deleteVdaRow(this)">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            if (cost || proceeds) {
+                calculateRowGain(tr.querySelector(".vda-cost"));
+            }
+        }
+
+        function deleteVdaRow(btn) {
+            btn.closest("tr").remove();
+            updateVdaSummary();
+        }
+
+        function calculateRowGain(input) {
+            const tr = input.closest("tr");
+            const cost = parseFloat(tr.querySelector(".vda-cost").value) || 0;
+            const proceeds = parseFloat(tr.querySelector(".vda-proceeds").value) || 0;
+            const gain = Math.max(0, proceeds - cost);
+            tr.querySelector(".vda-gain").innerText = formatINR(gain);
+            updateVdaSummary();
+        }
+
+        function getVdaData() {
+            const rows = document.querySelectorAll("#vda-entries-body tr");
+            const data = [];
+            rows.forEach(tr => {
+                const symbolInput = tr.querySelector(".vda-symbol");
+                const buyDateInput = tr.querySelector(".vda-buy-date");
+                const sellDateInput = tr.querySelector(".vda-sell-date");
+                const costInput = tr.querySelector(".vda-cost");
+                const proceedsInput = tr.querySelector(".vda-proceeds");
+                if (symbolInput && buyDateInput && sellDateInput && costInput && proceedsInput) {
+                    const symbol = symbolInput.value.trim();
+                    const buyDate = buyDateInput.value;
+                    const sellDate = sellDateInput.value;
+                    const cost = parseFloat(costInput.value) || 0;
+                    const proceeds = parseFloat(proceedsInput.value) || 0;
+                    if (symbol || buyDate || sellDate || cost || proceeds) {
+                        data.push({
+                            symbol: symbol || "VDA",
+                            buy_date: buyDate,
+                            sell_date: sellDate,
+                            cost_inr: cost,
+                            proceeds_inr: proceeds,
+                            gain_inr: Math.max(0, proceeds - cost)
+                        });
+                    }
+                }
+            });
+            return data;
+        }
+
+        function renderVda(trades) {
+            const tbody = document.getElementById("vda-entries-body");
+            tbody.innerHTML = "";
+            if (!trades || trades.length === 0) return;
+            trades.forEach(t => {
+                let buyStr = "";
+                let sellStr = "";
+                if (t.buy_date) buyStr = t.buy_date.split("T")[0];
+                if (t.sell_date) sellStr = t.sell_date.split("T")[0];
+                addManualVdaRow(t.symbol, buyStr, sellStr, t.cost_inr, t.proceeds_inr);
+            });
+            updateVdaSummary();
+        }
+
+        function updateVdaSummary() {
+            const trades = getVdaData();
+            let totalConsideration = 0;
+            let totalCost = 0;
+            let totalGains = 0;
+            trades.forEach(t => {
+                totalConsideration += t.proceeds_inr;
+                totalCost += t.cost_inr;
+                totalGains += t.gain_inr;
+            });
+            const vdaTax = totalGains * 0.30;
+            document.getElementById("vda-summary-proceeds").innerText = formatINR(totalConsideration);
+            document.getElementById("vda-summary-cost").innerText = formatINR(totalCost);
+            document.getElementById("vda-summary-gains").innerText = formatINR(totalGains);
+            document.getElementById("vda-summary-tax").innerText = formatINR(vdaTax);
+        }
+
+        // --- Schedule AL Logic ---
+        function addAlImmovableRow(address = "", pinCode = "", cost = "") {
+            const tbody = document.getElementById("al-immovable-body");
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+            tr.innerHTML = `
+                <td style="padding: 0.5rem;"><input type="text" class="al-address form-control" style="padding: 0.3rem; font-size:0.8rem;" value="${address}" placeholder="e.g. Flat 402, Highrise Apts, Bangalore"></td>
+                <td style="padding: 0.5rem;"><input type="text" class="al-pin form-control" style="padding: 0.3rem; font-size:0.8rem; max-width: 90px;" value="${pinCode}" placeholder="560001"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="al-cost form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${cost}" placeholder="0" oninput="updateAlSummary()"></td>
+                <td style="padding: 0.5rem; text-align:center;">
+                    <button class="btn-copy" style="background:#ef4444; border:none; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="deleteAlRow(this)">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            updateAlSummary();
+        }
+
+        function deleteAlRow(btn) {
+            btn.closest("tr").remove();
+            updateAlSummary();
+        }
+
+        function getAlData() {
+            const immovableRows = document.querySelectorAll("#al-immovable-body tr");
+            const immovable = [];
+            let totalImmovable = 0;
+            immovableRows.forEach(tr => {
+                const addrInput = tr.querySelector(".al-address");
+                const pinInput = tr.querySelector(".al-pin");
+                const costInput = tr.querySelector(".al-cost");
+                if (addrInput && pinInput && costInput) {
+                    const address = addrInput.value.trim();
+                    const pin = pinInput.value.trim();
+                    const cost = parseFloat(costInput.value) || 0;
+                    if (address || pin || cost) {
+                        immovable.push({ address: address, pinCode: pin, cost: cost });
+                        totalImmovable += cost;
+                    }
+                }
+            });
+
+            const deposits = parseFloat(document.getElementById("al_bank_deposits").value) || 0;
+            const shares = parseFloat(document.getElementById("al_shares_securities").value) || 0;
+            const insurance = parseFloat(document.getElementById("al_insurance_policies").value) || 0;
+            const loans = parseFloat(document.getElementById("al_loans_given").value) || 0;
+            const jewellery = parseFloat(document.getElementById("al_jewellery").value) || 0;
+            const vehicles = parseFloat(document.getElementById("al_vehicles").value) || 0;
+            const liabilities = parseFloat(document.getElementById("al_liabilities").value) || 0;
+
+            const totalMovable = deposits + shares + insurance + loans + jewellery + vehicles;
+
+            return {
+                immovable: immovable,
+                movable: {
+                    bankDeposits: deposits,
+                    sharesSecurities: shares,
+                    insurancePolicies: insurance,
+                    loansAdvancesGiven: loans,
+                    jewelleryBullion: jewellery,
+                    vehiclesYachts: vehicles
+                },
+                liabilities: liabilities,
+                summary: {
+                    totalImmovableCost: totalImmovable,
+                    totalMovableCost: totalMovable,
+                    totalAssetsCost: totalImmovable + totalMovable,
+                    totalLiabilities: liabilities
+                }
+            };
+        }
+
+        function renderAl(alData) {
+            const tbody = document.getElementById("al-immovable-body");
+            tbody.innerHTML = "";
+            if (!alData) return;
+
+            if (alData.immovable) {
+                alData.immovable.forEach(prop => {
+                    addAlImmovableRow(prop.address, prop.pinCode || prop.pinCodeVal || prop.pin, prop.cost);
+                });
+            }
+
+            const m = alData.movable || {};
+            document.getElementById("al_bank_deposits").value = m.bankDeposits || "";
+            document.getElementById("al_shares_securities").value = m.sharesSecurities || "";
+            document.getElementById("al_insurance_policies").value = m.insurancePolicies || "";
+            document.getElementById("al_loans_given").value = m.loansAdvancesGiven || "";
+            document.getElementById("al_jewellery").value = m.jewelleryBullion || "";
+            document.getElementById("al_vehicles").value = m.vehiclesYachts || "";
+            document.getElementById("al_liabilities").value = alData.liabilities || "";
+
+            updateAlSummary();
+        }
+
+        function updateAlSummary() {
+            const al = getAlData();
+            document.getElementById("al-summary-immovable").innerText = formatINR(al.summary.totalImmovableCost);
+            document.getElementById("al-summary-movable").innerText = formatINR(al.summary.totalMovableCost);
+            document.getElementById("al-summary-total-assets").innerText = formatINR(al.summary.totalAssetsCost);
+            document.getElementById("al-summary-liabilities").innerText = formatINR(al.summary.totalLiabilities);
+        }
+
+        function exportAlJson() {
+            const al = getAlData();
+            const filename = "Schedule_AL_ITR_Upload.json";
+            const jsonStr = JSON.stringify({ ScheduleAL: al }, null, 2);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportAlCsv() {
+            const al = getAlData();
+            let csv = "Schedule AL Asset Declaration Summary\n\n";
+            csv += "Section,Asset Type,Cost / Balance (INR)\n";
+
+            al.immovable.forEach((prop, idx) => {
+                csv += `A. Immovable,Property ${idx + 1} (${prop.address.replace(/,/g, " ")}) PIN: ${prop.pinCode},${prop.cost}\n`;
+            });
+            if (al.immovable.length === 0) {
+                csv += "A. Immovable,No properties declared,0\n";
+            }
+
+            csv += `B. Movable,Bank deposits & balances,${al.movable.bankDeposits}\n`;
+            csv += `B. Movable,Shares & Securities,${al.movable.sharesSecurities}\n`;
+            csv += `B. Movable,Insurance policies cost,${al.movable.insurancePolicies}\n`;
+            csv += `B. Movable,Loans & advances given,${al.movable.loansAdvancesGiven}\n`;
+            csv += `B. Movable,Jewellery bullion & gold,${al.movable.jewelleryBullion}\n`;
+            csv += `B. Movable,Vehicles yachts & aircrafts,${al.movable.vehiclesYachts}\n`;
+
+            csv += `\nC. Liabilities,Outstanding loan liabilities,${al.liabilities}\n\n`;
+            csv += `Total Cost of Assets,,${al.summary.totalAssetsCost}\n`;
+            csv += `Total Liabilities,,${al.summary.totalLiabilities}\n`;
+
+            const filename = "Schedule_AL_ITR_Summary.csv";
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- Schedule FA Logic ---
+        function addFaRow(desc = "", broker = "", peak = "", closing = "", dividend = "", proceeds = "") {
+            const tbody = document.getElementById("fa-table-body");
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+            tr.innerHTML = `
+                <td style="padding: 0.5rem;"><input type="text" class="fa-description form-control" style="padding: 0.3rem; font-size:0.8rem;" value="${desc}" placeholder="e.g. Equity shares of GOOG"></td>
+                <td style="padding: 0.5rem;"><input type="text" class="fa-institution form-control" style="padding: 0.3rem; font-size:0.8rem;" value="${broker}" placeholder="e.g. Charles Schwab"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="fa-peak form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${peak}" placeholder="0.00"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="fa-closing form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${closing}" placeholder="0.00"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="fa-dividend form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${dividend}" placeholder="0.00"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="fa-proceeds form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${proceeds}" placeholder="0.00"></td>
+                <td style="padding: 0.5rem; text-align:center;">
+                    <button class="btn-copy" style="background:#ef4444; border:none; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="deleteFaRow(this)">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function deleteFaRow(btn) {
+            btn.closest("tr").remove();
+        }
+
+        function getFaData() {
+            const rows = document.querySelectorAll("#fa-table-body tr");
+            const fa = [];
+            rows.forEach(tr => {
+                const descInput = tr.querySelector(".fa-description");
+                if (!descInput) return;
+                fa.push({
+                    "asset_description": descInput.value || "",
+                    "institution_name": tr.querySelector(".fa-institution").value || "",
+                    "peak_value_usd": parseFloat(tr.querySelector(".fa-peak").value) || 0.0,
+                    "closing_value_usd": parseFloat(tr.querySelector(".fa-closing").value) || 0.0,
+                    "gross_interest_dividend_usd": parseFloat(tr.querySelector(".fa-dividend").value) || 0.0,
+                    "proceeds_from_sale_usd": parseFloat(tr.querySelector(".fa-proceeds").value) || 0.0
+                });
+            });
+            return fa;
+        }
+
+        // --- Capital Gains Exemptions Logic ---
+        function addCgExemptionRow(sec = "54F", appliedTo = "LTCG_Listed", reinvestment = "", netConsideration = "") {
+            const tbody = document.getElementById("cg-exemptions-body");
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+            
+            const is54F = sec === "54F";
+            const disabledAttr = is54F ? "" : "disabled";
+            const placeholderVal = is54F ? "e.g. 5000000" : "N/A";
+            
+            tr.innerHTML = `
+                <td style="padding: 0.5rem;">
+                    <select class="cg-section form-control" style="padding: 0.3rem; font-size:0.8rem; background: var(--card-bg); color: #fff; border: 1px solid var(--border-color); border-radius: 4px; width: 100%;" onchange="onCgSectionChange(this)">
+                        <option value="54" ${sec === "54" ? "selected" : ""}>Sec 54</option>
+                        <option value="54B" ${sec === "54B" ? "selected" : ""}>Sec 54B</option>
+                        <option value="54EC" ${sec === "54EC" ? "selected" : ""}>Sec 54EC</option>
+                        <option value="54F" ${sec === "54F" ? "selected" : ""}>Sec 54F</option>
+                    </select>
+                </td>
+                <td style="padding: 0.5rem;">
+                    <select class="cg-applied-to form-control" style="padding: 0.3rem; font-size:0.8rem; background: var(--card-bg); color: #fff; border: 1px solid var(--border-color); border-radius: 4px; width: 100%;">
+                        <option value="LTCG_Listed" ${appliedTo === "LTCG_Listed" ? "selected" : ""}>LTCG Listed (Sec 112A)</option>
+                        <option value="LTCG_Unlisted" ${appliedTo === "LTCG_Unlisted" ? "selected" : ""}>LTCG Unlisted (Sec 112)</option>
+                        <option value="Other" ${appliedTo === "Other" ? "selected" : ""}>Other Capital Assets</option>
+                    </select>
+                </td>
+                <td style="padding: 0.5rem;"><input type="number" class="cg-reinvestment form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${reinvestment}" placeholder="e.g. 1000000"></td>
+                <td style="padding: 0.5rem;"><input type="number" class="cg-net-consideration form-control" style="padding: 0.3rem; font-size:0.8rem; text-align:right;" value="${netConsideration}" placeholder="${placeholderVal}" ${disabledAttr}></td>
+                <td style="padding: 0.5rem; text-align:center;">
+                    <button class="btn-copy" style="background:#ef4444; border:none; padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="deleteCgExemptionRow(this)">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function deleteCgExemptionRow(btn) {
+            btn.closest("tr").remove();
+        }
+
+        function onCgSectionChange(selectEl) {
+            const row = selectEl.closest("tr");
+            const netConsInput = row.querySelector(".cg-net-consideration");
+            if (selectEl.value === "54F") {
+                netConsInput.disabled = false;
+                netConsInput.placeholder = "e.g. 5000000";
+            } else {
+                netConsInput.disabled = true;
+                netConsInput.placeholder = "N/A";
+                netConsInput.value = "";
+            }
+        }
+
+        function getCgExemptions() {
+            const rows = document.querySelectorAll("#cg-exemptions-body tr");
+            const exemptions = [];
+            rows.forEach(tr => {
+                const secSelect = tr.querySelector(".cg-section");
+                if (!secSelect) return;
+                exemptions.push({
+                    "section": secSelect.value,
+                    "applied_to": tr.querySelector(".cg-applied-to").value,
+                    "reinvestment_amount": parseFloat(tr.querySelector(".cg-reinvestment").value) || 0.0,
+                    "net_consideration": parseFloat(tr.querySelector(".cg-net-consideration").value) || 0.0
+                });
+            });
+            return exemptions;
         }
     </script>
+
+    <!-- Breakdown Modal -->
+    <div id="breakdown-modal" class="modal-overlay" style="display: none;" onclick="handleOverlayClick(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title" style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #fff;">Breakdown</h3>
+                <button onclick="closeModal()" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
 </body>
+
 </html>

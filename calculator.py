@@ -276,8 +276,20 @@ class TaxCalculator:
             tax += slab_tax
             
             if taxable_in_slab > 0:
+                def format_limit_lakhs(limit_val: float) -> str:
+                    if limit_val == 0:
+                        return "₹0"
+                    if limit_val == float('inf'):
+                        return "Above"
+                    val = limit_val / 100000.0
+                    if val.is_integer():
+                        return f"₹{int(val)}L"
+                    else:
+                        return f"₹{val:.1f}L"
+                
+                slab_str = f"Above {format_limit_lakhs(previous_limit)}" if limit == float('inf') else f"{format_limit_lakhs(previous_limit)} to {format_limit_lakhs(limit)}"
                 breakdown.append({
-                    "slab": f"₹{previous_limit // 1000}k to " + (f"₹{limit // 1000}k" if limit != float('inf') else "Above"),
+                    "slab": slab_str,
                     "taxable_amount": taxable_in_slab,
                     "rate": f"{int(rate * 100)}%",
                     "tax": slab_tax
@@ -310,6 +322,88 @@ class TaxCalculator:
 
         return tax, breakdown
 
+    def calculate_surcharge(self, is_new: bool, taxable_slab_income: float, special_cg_income: float, dividend_income: float, basic_tax: float, slab_tax: float, cg_tax: float, vda_income: float = 0.0) -> float:
+        total_income = taxable_slab_income + special_cg_income + vda_income
+        if total_income <= 5000000.0:
+            return 0.0
+            
+        if total_income <= 10000000.0:
+            return basic_tax * 0.10
+        elif total_income <= 20000000.0:
+            return basic_tax * 0.15
+            
+        if is_new:
+            return basic_tax * 0.15
+        else:
+            cg_special_tax = cg_tax
+            if taxable_slab_income > 0:
+                slab_tax_on_div = slab_tax * (min(dividend_income, taxable_slab_income) / taxable_slab_income)
+            else:
+                slab_tax_on_div = 0.0
+                
+            tax_capped = cg_special_tax + slab_tax_on_div
+            tax_other = max(0.0, basic_tax - tax_capped)
+            
+            surcharge_capped = tax_capped * 0.15
+            
+            other_income = total_income - (dividend_income + special_cg_income)
+            if other_income <= 5000000.0:
+                surcharge_other = 0.0
+            elif other_income <= 10000000.0:
+                surcharge_other = tax_other * 0.10
+            elif other_income <= 20000000.0:
+                surcharge_other = tax_other * 0.15
+            elif other_income <= 50000000.0:
+                surcharge_other = tax_other * 0.25
+            else:
+                surcharge_other = tax_other * 0.37
+                
+            return surcharge_capped + surcharge_other
+
+    def calculate_234_interest(self, net_tax_payable: float, tds_credited: float, advance_tax_paid: float, basic_tax: float, slab_tax: float, cg_tax: float, special_cg_income: float, dividend_income: float, taxable_slab_income: float, vda_tax: float = 0.0) -> tuple:
+        assessed_tax = max(0.0, net_tax_payable - tds_credited)
+        if assessed_tax < 10000.0:
+            return 0.0, 0.0
+            
+        # 1. Section 234B Interest
+        interest_234b = 0.0
+        if advance_tax_paid < (0.90 * assessed_tax):
+            shortfall = assessed_tax - advance_tax_paid
+            shortfall_rounded = (shortfall // 100) * 100
+            interest_234b = shortfall_rounded * 0.04
+            
+        # 2. Section 234C Interest
+        cg_special_tax = cg_tax
+        if taxable_slab_income > 0:
+            slab_tax_on_div = slab_tax * (min(dividend_income, taxable_slab_income) / taxable_slab_income)
+        else:
+            slab_tax_on_div = 0.0
+            
+        tax_on_cg_and_dividends = cg_special_tax + slab_tax_on_div + vda_tax
+        total_tax_on_cg_and_dividends = tax_on_cg_and_dividends * 1.04
+        
+        assessed_tax_regular = max(0.0, assessed_tax - total_tax_on_cg_and_dividends)
+        
+        # June 15: 15% of assessed_tax_regular
+        shortfall_june = 0.15 * assessed_tax_regular
+        interest_june = ((shortfall_june // 100) * 100) * 0.03
+        
+        # Sept 15: 45% of assessed_tax_regular
+        shortfall_sept = 0.45 * assessed_tax_regular
+        interest_sept = ((shortfall_sept // 100) * 100) * 0.03
+        
+        # Dec 15: 75% of assessed_tax_regular
+        shortfall_dec = 0.75 * assessed_tax_regular
+        interest_dec = ((shortfall_dec // 100) * 100) * 0.03
+        
+        # March 15: 100% of assessed tax
+        shortfall_march = max(0.0, assessed_tax - advance_tax_paid)
+        interest_march = ((shortfall_march // 100) * 100) * 0.01
+        
+        interest_234c = interest_june + interest_sept + interest_dec + interest_march
+        
+        return interest_234b, interest_234c
+
     def compute_tax_liability(self, inputs: dict) -> dict:
         """
         Assembles all income sources, deductions, and computes tax
@@ -322,6 +416,15 @@ class TaxCalculator:
         us_dividends = inputs.get("us_dividends", [])
         us_interest = inputs.get("us_interest", [])
         dob_str = inputs.get("dob", "").strip()
+        vda_trades = inputs.get("vda_trades", [])
+        
+        total_vda_gains = 0.0
+        for t in vda_trades:
+            cost = float(t.get("cost_inr", 0.0))
+            proceeds = float(t.get("proceeds_inr", 0.0))
+            gain = max(0.0, proceeds - cost)
+            t["gain_inr"] = gain
+            total_vda_gains += gain
         
         # Determine senior status based on age at end of FY
         is_senior = False
@@ -347,6 +450,19 @@ class TaxCalculator:
         custom_80d = float(inputs.get("custom_80d", 0.0))
         advance_tax_paid = float(inputs.get("advance_tax_paid", ais.get("advance_tax_paid", 0.0)))
 
+        # HRA Calculator Inputs
+        hra_basic = float(inputs.get("hra_basic") or 0.0)
+        hra_received = float(inputs.get("hra_received") or 0.0)
+        hra_rent = float(inputs.get("hra_rent") or 0.0)
+        hra_metro = inputs.get("hra_metro") in [True, "true", "True", 1, "1"]
+        
+        hra_exempt = 0.0
+        if hra_received > 0 and hra_basic > 0:
+            limit_1 = hra_received
+            limit_2 = max(0.0, hra_rent - (0.10 * hra_basic))
+            limit_3 = (0.50 * hra_basic) if hra_metro else (0.40 * hra_basic)
+            hra_exempt = min(limit_1, limit_2, limit_3)
+
         # 1. Salary components
         gross_salary = (
             float(form16.get("gross_salary_17_1", 0.0)) +
@@ -354,6 +470,9 @@ class TaxCalculator:
             float(form16.get("profits_lieu_17_3", 0.0))
         )
         exempt_allowances = float(form16.get("allowances_exempt_sec_10", 0.0))
+        if hra_exempt > 0:
+            exempt_allowances = max(exempt_allowances, hra_exempt)
+            
         prof_tax = float(form16.get("professional_tax_16_ii", 0.0))
 
         # 2. Other Sources
@@ -361,6 +480,10 @@ class TaxCalculator:
         fd_interest = float(ais.get("fd_interest", 0.0))
         domestic_dividends = float(ais.get("domestic_dividends", 0.0))
         taxable_epf_interest = float(ais.get("taxable_epf_interest", 0.0))
+        
+        tax_refund_amount = float(ais.get("tax_refund_amount", 0.0))
+        tax_refund_interest = float(ais.get("tax_refund_interest", 0.0))
+        tax_due_demand = float(ais.get("tax_due_demand", 0.0))
         
         # US Dividends Sum
         total_us_dividends_inr = sum(item["amount_inr"] for item in us_dividends)
@@ -370,11 +493,89 @@ class TaxCalculator:
         total_us_interest_inr = sum(item["amount_inr"] for item in us_interest)
         total_us_interest_withholding_inr = sum(item["withholding_inr"] for item in us_interest)
 
-        other_sources_income = savings_interest + fd_interest + domestic_dividends + total_us_dividends_inr + total_us_interest_inr + taxable_epf_interest
+        other_sources_income = (
+            savings_interest + 
+            fd_interest + 
+            domestic_dividends + 
+            total_us_dividends_inr + 
+            total_us_interest_inr + 
+            taxable_epf_interest + 
+            tax_refund_interest
+        )
 
         # 3. Capital Gains calculation
         cg_results = self.calculate_capital_gains(stock_sales)
         net_cg = cg_results["net_gains"]
+
+        # Parse and apply Capital Gains Exemptions (Sec 54 / 54B / 54EC / 54F)
+        cg_exemptions = inputs.get("cg_exemptions", [])
+        applied_exemptions = []
+        exemptions_by_category = {
+            "LTCG_Listed": 0.0,
+            "LTCG_Unlisted": 0.0,
+            "Other": 0.0
+        }
+        
+        for ex in cg_exemptions:
+            sec = ex.get("section", "54F")
+            applied_to = ex.get("applied_to", "LTCG_Listed")
+            reinvestment = float(ex.get("reinvestment_amount") or 0.0)
+            net_cons = float(ex.get("net_consideration") or 0.0)
+            
+            # Determine currently available gain in this category to offset
+            if applied_to == "LTCG_Listed":
+                eligible_gain = net_cg["ltcg_listed"] - exemptions_by_category["LTCG_Listed"]
+            elif applied_to == "LTCG_Unlisted":
+                eligible_gain = net_cg["ltcg_unlisted"] - exemptions_by_category["LTCG_Unlisted"]
+            else:
+                eligible_gain = 999999999999.0  # other general assets
+            
+            eligible_gain = max(0.0, eligible_gain)
+            ex_amount = 0.0
+            
+            if reinvestment > 0:
+                if sec == "54":
+                    # Sec 54 cap is 10 Crores
+                    reinv_cap = min(reinvestment, 100000000.0)
+                    ex_amount = min(eligible_gain, reinv_cap)
+                elif sec == "54B":
+                    ex_amount = min(eligible_gain, reinvestment)
+                elif sec == "54EC":
+                    # Sec 54EC cap is 50 Lakhs
+                    reinv_cap = min(reinvestment, 5000000.0)
+                    ex_amount = min(eligible_gain, reinv_cap)
+                elif sec == "54F":
+                    # Sec 54F cap on reinvestment base is 10 Crores
+                    reinv_cap = min(reinvestment, 100000000.0)
+                    if net_cons > 0:
+                        if reinv_cap >= net_cons:
+                            ex_amount = eligible_gain
+                        else:
+                            ex_amount = eligible_gain * (reinv_cap / net_cons)
+                    else:
+                        ex_amount = 0.0
+            
+            ex_amount = min(eligible_gain, ex_amount)
+            ex_amount = round(ex_amount, 2)
+            
+            if applied_to in exemptions_by_category:
+                exemptions_by_category[applied_to] += ex_amount
+                
+            applied_exemptions.append({
+                "section": sec,
+                "applied_to": applied_to,
+                "reinvestment_amount": reinvestment,
+                "net_consideration": net_cons,
+                "computed_exemption": ex_amount
+            })
+
+        # Apply computed deductions to net capital gains
+        net_cg["ltcg_listed"] = max(0.0, net_cg["ltcg_listed"] - exemptions_by_category["LTCG_Listed"])
+        net_cg["ltcg_unlisted"] = max(0.0, net_cg["ltcg_unlisted"] - exemptions_by_category["LTCG_Unlisted"])
+        
+        # Save exemptions inside cg_results to bubble up to frontend
+        cg_results["exemptions"] = applied_exemptions
+        cg_results["exemptions_by_category"] = exemptions_by_category
 
         # Special tax heads (STCG 111A and LTCG 112A/112 are taxed at special rates, not slabs)
         special_cg_income = net_cg["stcg_listed"] + net_cg["ltcg_listed"] + net_cg["ltcg_unlisted"]
@@ -465,17 +666,25 @@ class TaxCalculator:
             ltcg_unlisted_tax = net_cg["ltcg_unlisted"] * rate_112
 
             total_cg_tax = stcg_listed_tax + ltcg_listed_tax + ltcg_unlisted_tax
+            vda_tax = total_vda_gains * 0.30
             
-            # Total basic tax before cess
-            basic_tax = slab_tax + total_cg_tax
+            # Total basic tax (slab tax + capital gains tax + VDA tax)
+            basic_tax = slab_tax + total_cg_tax + vda_tax
             
-            # Health & Education Cess (4%)
-            cess = basic_tax * 0.04
-            total_tax_before_relief = basic_tax + cess
+            # Calculate Surcharge
+            surcharge = self.calculate_surcharge(
+                is_new, taxable_slab_income, special_cg_income,
+                domestic_dividends + total_us_dividends_inr,
+                basic_tax, slab_tax, total_cg_tax, total_vda_gains
+            )
+            
+            # Health & Education Cess (4%) on (basic tax + surcharge)
+            cess = (basic_tax + surcharge) * 0.04
+            total_tax_before_relief = basic_tax + surcharge + cess
 
             # --- Foreign Tax Credit (FTC) Relief u/s 90 ---
             # Calculated based on average tax rate in India
-            total_taxable_income = taxable_slab_income + special_cg_income
+            total_taxable_income = taxable_slab_income + special_cg_income + total_vda_gains
             avg_tax_rate = (total_tax_before_relief / total_taxable_income) if total_taxable_income > 0 else 0.0
             
             # Relief u/s 90 on combined US Dividend & Interest Income
@@ -484,18 +693,28 @@ class TaxCalculator:
             us_tax_in_india = combined_us_income * avg_tax_rate
             ftc_relief = min(combined_us_withholding, us_tax_in_india)
 
-            # Net Tax Payable
+            # Net Tax Payable (before interest u/s 234)
             net_tax_payable = max(0.0, total_tax_before_relief - ftc_relief)
             
             # TDS and Advance Tax credits
             tds_employer = float(form16.get("tds_deducted", 0.0))
-            net_payable_refundable = net_tax_payable - tds_employer - advance_tax_paid
-
+            
+            # Calculate Section 234B and 234C interest
+            interest_234b, interest_234c = self.calculate_234_interest(
+                net_tax_payable, tds_employer, advance_tax_paid,
+                basic_tax, slab_tax, total_cg_tax, special_cg_income,
+                domestic_dividends + total_us_dividends_inr, taxable_slab_income, vda_tax
+            )
+            
+            total_tax_surcharge_interest = net_tax_payable + interest_234b + interest_234c
+            net_payable_refundable = total_tax_surcharge_interest - tds_employer - advance_tax_paid + tax_due_demand
+            
             results[regime] = {
                 "gross_salary": gross_salary,
                 "net_salary": net_salary,
                 "other_sources_income": other_sources_income,
                 "house_property_income": house_property_income,
+                "exempt_allowances": exempt_allowances if not is_new else 0.0,
                 "deductions": {
                     "80C": ded_80c,
                     "80D": ded_80d,
@@ -508,20 +727,30 @@ class TaxCalculator:
                 "total_taxable_income": total_taxable_income,
                 "slab_tax": slab_tax,
                 "slab_breakdown": slab_breakdown,
+                "hra_exempt": hra_exempt if not is_new else 0.0,
                 "cg_tax": {
                     "stcg_listed": stcg_listed_tax,
                     "ltcg_listed": ltcg_listed_tax,
                     "ltcg_unlisted": ltcg_unlisted_tax,
                     "total": total_cg_tax
                 },
+                "vda_income": total_vda_gains,
+                "vda_tax": vda_tax,
                 "basic_tax": basic_tax,
+                "surcharge": surcharge,
                 "cess": cess,
                 "total_tax_before_relief": total_tax_before_relief,
                 "avg_tax_rate_pct": avg_tax_rate * 100.0,
                 "ftc_relief": ftc_relief,
                 "net_tax_payable": net_tax_payable,
+                "interest_234b": interest_234b,
+                "interest_234c": interest_234c,
+                "total_tax_surcharge_interest": total_tax_surcharge_interest,
                 "tds_credited": tds_employer,
                 "advance_tax_paid": advance_tax_paid,
+                "tax_refund_amount": tax_refund_amount,
+                "tax_refund_interest": tax_refund_interest,
+                "tax_due_demand": tax_due_demand,
                 "final_due_or_refund": net_payable_refundable
             }
 
@@ -532,7 +761,10 @@ class TaxCalculator:
         # Filters stock purchases or holdings
         # Since we have transactions, we can aggregate holdings
         # Let's build a nice helper structure for Schedule FA
-        schedule_fa_data = self._generate_schedule_fa(stock_sales, us_dividends)
+        # Check if Schedule FA is provided in inputs (user manual override)
+        schedule_fa_data = inputs.get("schedule_fa")
+        if schedule_fa_data is None:
+            schedule_fa_data = self._generate_schedule_fa(stock_sales, us_dividends)
 
         return {
             "regimes": results,

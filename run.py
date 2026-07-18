@@ -1,3 +1,4 @@
+import os
 import time
 import webbrowser
 import threading
@@ -14,8 +15,10 @@ if __name__ == "__main__":
     print("\n[Aatmanirbhar Tax] Starting local e-filing calculation server...")
     print("Keep this terminal window open while using the software.")
     
-    # Start browser-opening in a background thread
-    threading.Thread(target=open_browser, daemon=True).start()
+    # Start browser-opening in a background thread only once
+    # (prevents Werkzeug reloader master process from spawning a duplicate tab)
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+        threading.Thread(target=open_browser, daemon=True).start()
     
     # Start Flask server
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    app.run(host="127.0.0.1", port=5000, debug=True)
