@@ -332,33 +332,31 @@ class TaxCalculator:
         elif total_income <= 20000000.0:
             return basic_tax * 0.15
             
-        if is_new:
-            return basic_tax * 0.15
+        # For total income > 2 Crores, we split the tax and apply rates:
+        # - Surcharge on tax of capital gains (Sec 111A, 112A, 112) and dividends is capped at 15%.
+        # - Surcharge on other tax (slab tax on other income) is 25% or 37% depending on other income.
+        cg_special_tax = cg_tax
+        if taxable_slab_income > 0:
+            slab_tax_on_div = slab_tax * (min(dividend_income, taxable_slab_income) / taxable_slab_income)
         else:
-            cg_special_tax = cg_tax
-            if taxable_slab_income > 0:
-                slab_tax_on_div = slab_tax * (min(dividend_income, taxable_slab_income) / taxable_slab_income)
-            else:
-                slab_tax_on_div = 0.0
-                
-            tax_capped = cg_special_tax + slab_tax_on_div
-            tax_other = max(0.0, basic_tax - tax_capped)
+            slab_tax_on_div = 0.0
             
-            surcharge_capped = tax_capped * 0.15
+        tax_capped = cg_special_tax + slab_tax_on_div
+        tax_other = max(0.0, basic_tax - tax_capped)
+        
+        surcharge_capped = tax_capped * 0.15
+        
+        # Surcharge rate on regular slab tax (other than dividends)
+        other_income = total_income - (dividend_income + special_cg_income)
+        if other_income <= 20000000.0:
+            rate_other = 0.15
+        elif other_income <= 50000000.0:
+            rate_other = 0.25
+        else:
+            rate_other = 0.25 if is_new else 0.37
             
-            other_income = total_income - (dividend_income + special_cg_income)
-            if other_income <= 5000000.0:
-                surcharge_other = 0.0
-            elif other_income <= 10000000.0:
-                surcharge_other = tax_other * 0.10
-            elif other_income <= 20000000.0:
-                surcharge_other = tax_other * 0.15
-            elif other_income <= 50000000.0:
-                surcharge_other = tax_other * 0.25
-            else:
-                surcharge_other = tax_other * 0.37
-                
-            return surcharge_capped + surcharge_other
+        surcharge_other = tax_other * rate_other
+        return surcharge_capped + surcharge_other
 
     def calculate_234_interest(self, net_tax_payable: float, tds_credited: float, advance_tax_paid: float, basic_tax: float, slab_tax: float, cg_tax: float, special_cg_income: float, dividend_income: float, taxable_slab_income: float, vda_tax: float = 0.0) -> tuple:
         assessed_tax = max(0.0, net_tax_payable - tds_credited)
