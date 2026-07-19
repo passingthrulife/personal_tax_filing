@@ -23,13 +23,12 @@ The tool parses official PDFs and statements locally, resolves exchange rates u/
 
 ## 👥 Who Can Use This Tool?
 
-Indian residents who file **ITR-2** or **ITR-3** and have:
+Indian residents who file **ITR-1** or **ITR-2** and have:
 1. **Salary Income** with RSU/Stock vesting details.
 2. **Foreign Assets (Schedule FA)** and US Stock Capital Gains.
 3. **Double-Taxed Foreign Dividends** requiring Section 90 relief and Form 67 preparation.
 4. **Interest Income** across multiple bank accounts and Fixed Deposits.
 5. **Taxable EPF Interest** from high employee provident fund contributions.
-6. **Prior Year Tax Refund Interest** u/s 244A.
 
 ---
 
