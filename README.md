@@ -1,38 +1,74 @@
-# SBI FX RateKeeper
+# Aatmanirbhar Tax Calculator
 
-[Explanation to Rule 26 of the Income Tax Rules, 1962](https://incometaxindia.gov.in/_layouts/15/dit/pages/viewer.aspx?grp=rule&cname=cmsid&cval=103120000000007372&searchfilter=) advises using telegraphic transfer rates of SBI as reference for calculating foreign income or capital gains. SBI publishes the rates daily on its website, barring Sundays and bank holidays. Unfortunately, they do not provide any way to access historical data.
+Aatmanirbhar Tax is a self-contained, automated personal income tax calculator built for Indian individual taxpayers with complex income portfolios. It is especially tailored for tech professionals and investors who receive foreign stock compensation (RSUs/ESPPs), claim Foreign Tax Credits (FTC) under Section 90, and manage multiple domestic interest and dividend sources.
 
-Well, worry no more. SBI FX RateKeeper saves the daily SBI forex rates in a CSV file, enabling easy access to historical rates. Rates for each currency are in a separate file; for example, SBI_REFERENCE_RATES_USD.csv has only the USD data.
+The tool parses official PDFs and statements locally, resolves exchange rates u/s Rule 26 using historical SBI TT Buying rates, computes tax liability under both the Old and New tax regimes, and generates a printable tax computation sheet.
 
-- New rates are added daily, automatically
-- Fully compatible with Microsoft Excel or Google Sheets
+---
 
-You can easily [browse and search the rates on GitHub](https://github.com/sahilgupta/sbi_forex_rates/tree/main/csv_files):
+## 🌟 Key Features
 
-![Browse historical SBI TTBR on GitHub](https://raw.githubusercontent.com/sahilgupta/sbi_forex_rates/main/images/Browse%20historical%20SBI%20TTBR%20on%20GitHub.gif)
-<br/>
+* **Regime Comparison**: Side-by-side old vs new tax regime comparison for **FY 2025-26 (AY 2026-27)**.
+* **Form 16 Parser**: Extracts salary particulars (Section 17(1) basic pay, Section 17(2) perquisites/vested RSUs, and Section 17(3) profits in lieu) directly from Form 16 PDF.
+* **AIS/TIS PDF Parser**: Uses a state-machine parser to scan the TIS/AIS Statement PDF, extracting and listing every savings account bank, deposit interest account, domestic company dividend, and advance tax payment.
+* **EPFO Taxable Interest**: Parses taxable interest from employee EPF contributions exceeding ₹2.5 Lakhs (along with Section 194A TDS credits).
+* **US Stock Realizations**: Parses Schwab/Fidelity CSV statements, converts USD to INR using the exact date-by-date SBI TT Buying rate, and computes short-term/long-term capital gains.
+* **Section 234C & 234B Interest**: Extracts actual dates of advance tax payments from the AIS PDF to compute bucketed quarterly shortfalls and interest charges u/s 234C and 234B.
+* **Form 67 FTC Relief**: Automatically computes Foreign Tax Credit (FTC) relief under Section 90 for double-taxed US stock dividends.
+* **Capital Gains Exemptions**: Factors in reinvestment exemptions (Section 54F, 54EC) for unlisted US stock sales.
+* **Interactive Modals**: Clickable schedule items on the dashboard show detailed breakdowns of individual bank transactions and assets.
+* **Printable PDF Reports**: Generates a high-fidelity tax computation sheet summarizing comparative schedules and transaction registers, printable directly to PDF.
 
-OR download the CSV files and use with Excel or Google Sheets
-![Download historical SBI TTBR CSV](https://raw.githubusercontent.com/sahilgupta/sbi_forex_rates/main/images/Download%20historical%20SBI%20TTBR%20CSV.gif)
-<br/>
+---
 
-The PDFs (saved from the SBI servers) are available in the *pdf_files/* folder. For verification, direct link to each day's PDF is also published along with the data. 
+## 👥 Who Can Use This Tool?
 
-**Note:**
-The SBI explicitly mentions that only the rates published for ₹10-20 lakh transaction range are to be considered as reference rates.
-The reference rates do NOT change based on your transaction value, which could be ₹100 or ₹1 Cr.
+Indian residents who file **ITR-2** or **ITR-3** and have:
+1. **Salary Income** with RSU/Stock vesting details.
+2. **Foreign Assets (Schedule FA)** and US Stock Capital Gains.
+3. **Double-Taxed Foreign Dividends** requiring Section 90 relief and Form 67 preparation.
+4. **Interest Income** across multiple bank accounts and Fixed Deposits.
+5. **Taxable EPF Interest** from high employee provident fund contributions.
+6. **Prior Year Tax Refund Interest** u/s 244A.
 
-## Known Limitations
-- Data is only available from Jan 2020 onwards.
-- For some reason, SBI doesn't publish the rates file on all working days; no data is available for such days. You can either get the rates from [RBI Reference Rate Archive](https://www.rbi.org.in/scripts/ReferenceRateArchive.aspx), or from some third-party FX rates vendor such as [OANDA](https://www.oanda.com/fx-for-business/historical-rates).
+---
 
-Typically, the RBI Reference rates have a 20-30 paise difference with the SBI TT Buying rates. This delta is reasonably stable over time. You can find the average difference for a few dates post 2020, take the published RBI rates and adjust them by the standard delta before using.
+## 📋 Necessary Input Files
 
-### Credits
-Credit for data prior to Dec 2022 goes to:
+To run calculations, upload the following files via the dashboard:
 
-- [Shivam Khandelwal](https://github.com/skbly7) for saving the PDF files of SBI's daily forex rates on GitHub since 2020 at [https://github.com/skbly7/sbi-tt-rates-historical]
+| File Type | Format | Source | Purpose |
+| :--- | :--- | :--- | :--- |
+| **AIS/TIS Statement** | `.pdf` | Income Tax e-filing portal | Extraction of savings, FDs, domestic dividends, EPF interest, advance tax dates, and refund interest |
+| **Form 16 Part B** | `.pdf` | Employer | Salary Section 17 breakdown and TDS credited |
+| **US Realization Report** | `.csv` | Schwab / Fidelity / Broker | Realized gain/loss details for US Stock capital gains |
+| **US Dividends Report** | `.csv` | Schwab / Fidelity / Broker | Foreign dividends received and tax withheld u/s 1042-S |
+| **US Schedule FA** *(Optional)* | `.json` | Pre-configured | Cost basis and peak value overrides for Schedule FA filing |
+| **CG Exemptions** *(Optional)* | `.json` | Pre-configured | Custom exemption amounts claimed under Section 54F/54EC |
 
-- Forex Rate Card archives of Maneesh K. Singh & Co. [2021](https://mksco.in/forex-card-rates-2021/) and [2022](https://mksco.in/forex-card-rates-2022/)
+---
 
-- Internet Archive Wayback Machine
+## 🛠️ Technical Requirements
+
+* **Python**: Version `3.9` or higher.
+* **Dependencies**: Minimal dependencies (only standard library + Flask web framework, PyPDF2 parser, and dateutil):
+  - `Flask==3.0.3`
+  - `PyPDF2==2.12.1`
+  - `python-dateutil==2.8.2`
+
+---
+
+## 🚀 Getting Started
+
+1. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Start the Server**:
+   ```bash
+   python run.py
+   ```
+
+3. **Use the Application**:
+   Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your web browser, enter your PAN & Date of Birth, upload your statements, and click **Process Tax Data**.

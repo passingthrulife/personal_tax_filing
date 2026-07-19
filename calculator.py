@@ -358,7 +358,7 @@ class TaxCalculator:
         surcharge_other = tax_other * rate_other
         return surcharge_capped + surcharge_other
 
-    def calculate_234_interest(self, net_tax_payable: float, tds_credited: float, advance_tax_paid: float, basic_tax: float, slab_tax: float, cg_tax: float, special_cg_income: float, dividend_income: float, taxable_slab_income: float, vda_tax: float = 0.0) -> tuple:
+    def calculate_234_interest(self, net_tax_payable: float, tds_credited: float, advance_tax_paid: float, basic_tax: float, slab_tax: float, cg_tax: float, special_cg_income: float, dividend_income: float, taxable_slab_income: float, vda_tax: float = 0.0, advance_tax_details: list = None) -> tuple:
         assessed_tax = max(0.0, net_tax_payable - tds_credited)
         if assessed_tax < 10000.0:
             return 0.0, 0.0
@@ -369,6 +369,43 @@ class TaxCalculator:
             shortfall = assessed_tax - advance_tax_paid
             shortfall_rounded = (shortfall // 100) * 100
             interest_234b = shortfall_rounded * 0.04
+            
+        # Bucket advance tax payments by due dates
+        tax_june = 0.0
+        tax_sept = 0.0
+        tax_dec = 0.0
+        tax_march = 0.0
+        
+        if advance_tax_details:
+            for pmt in advance_tax_details:
+                amt = float(pmt.get("amount", 0.0) or 0.0)
+                date_str = pmt.get("date", "")
+                if date_str:
+                    try:
+                        pmt_date = datetime.strptime(date_str, "%d/%m/%Y").date()
+                    except Exception:
+                        try:
+                            pmt_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                        except Exception:
+                            pmt_date = date(2026, 3, 15)
+                            
+                    if pmt_date <= date(2025, 6, 15):
+                        tax_june += amt
+                        tax_sept += amt
+                        tax_dec += amt
+                        tax_march += amt
+                    elif pmt_date <= date(2025, 9, 15):
+                        tax_sept += amt
+                        tax_dec += amt
+                        tax_march += amt
+                    elif pmt_date <= date(2025, 12, 15):
+                        tax_dec += amt
+                        tax_march += amt
+                    elif pmt_date <= date(2026, 3, 15):
+                        tax_march += amt
+        else:
+            # Fallback if only single manual amount is available (assume paid in final installment)
+            tax_march = advance_tax_paid
             
         # 2. Section 234C Interest
         cg_special_tax = cg_tax
@@ -382,20 +419,26 @@ class TaxCalculator:
         
         assessed_tax_regular = max(0.0, assessed_tax - total_tax_on_cg_and_dividends)
         
-        # June 15: 15% of assessed_tax_regular
-        shortfall_june = 0.15 * assessed_tax_regular
+        # June 15: 15% of assessed_tax_regular (Buffer: 12%)
+        if tax_june >= (0.12 * assessed_tax_regular):
+            shortfall_june = 0.0
+        else:
+            shortfall_june = max(0.0, 0.15 * assessed_tax_regular - tax_june)
         interest_june = ((shortfall_june // 100) * 100) * 0.03
         
-        # Sept 15: 45% of assessed_tax_regular
-        shortfall_sept = 0.45 * assessed_tax_regular
+        # Sept 15: 45% of assessed_tax_regular (Buffer: 36%)
+        if tax_sept >= (0.36 * assessed_tax_regular):
+            shortfall_sept = 0.0
+        else:
+            shortfall_sept = max(0.0, 0.45 * assessed_tax_regular - tax_sept)
         interest_sept = ((shortfall_sept // 100) * 100) * 0.03
         
         # Dec 15: 75% of assessed_tax_regular
-        shortfall_dec = 0.75 * assessed_tax_regular
+        shortfall_dec = max(0.0, 0.75 * assessed_tax_regular - tax_dec)
         interest_dec = ((shortfall_dec // 100) * 100) * 0.03
         
-        # March 15: 100% of assessed tax
-        shortfall_march = max(0.0, assessed_tax - advance_tax_paid)
+        # March 15: 100% of assessed tax (including cg/dividends)
+        shortfall_march = max(0.0, assessed_tax - tax_march)
         interest_march = ((shortfall_march // 100) * 100) * 0.01
         
         interest_234c = interest_june + interest_sept + interest_dec + interest_march
@@ -696,16 +739,19 @@ class TaxCalculator:
             
             # TDS and Advance Tax credits
             tds_employer = float(form16.get("tds_deducted", 0.0))
+            tds_epfo = float(ais.get("taxable_epf_interest_tds", 0.0))
+            total_tds = tds_employer + tds_epfo
             
             # Calculate Section 234B and 234C interest
             interest_234b, interest_234c = self.calculate_234_interest(
-                net_tax_payable, tds_employer, advance_tax_paid,
+                net_tax_payable, total_tds, advance_tax_paid,
                 basic_tax, slab_tax, total_cg_tax, special_cg_income,
-                domestic_dividends + total_us_dividends_inr, taxable_slab_income, vda_tax
+                domestic_dividends + total_us_dividends_inr, taxable_slab_income, vda_tax,
+                ais.get("advance_tax_details", [])
             )
             
             total_tax_surcharge_interest = net_tax_payable + interest_234b + interest_234c
-            net_payable_refundable = total_tax_surcharge_interest - tds_employer - advance_tax_paid + tax_due_demand
+            net_payable_refundable = total_tax_surcharge_interest - total_tds - advance_tax_paid + tax_due_demand
             
             results[regime] = {
                 "gross_salary": gross_salary,
@@ -744,7 +790,7 @@ class TaxCalculator:
                 "interest_234b": interest_234b,
                 "interest_234c": interest_234c,
                 "total_tax_surcharge_interest": total_tax_surcharge_interest,
-                "tds_credited": tds_employer,
+                "tds_credited": total_tds,
                 "advance_tax_paid": advance_tax_paid,
                 "tax_refund_amount": tax_refund_amount,
                 "tax_refund_interest": tax_refund_interest,

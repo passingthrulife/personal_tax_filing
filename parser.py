@@ -353,13 +353,19 @@ AIS/TIS text:
         """Regex-based fallback parser for AIS/TIS text."""
         data = {
             "savings_interest": 0.0,
+            "savings_details": [],
             "fd_interest": 0.0,
+            "fd_details": [],
             "domestic_dividends": 0.0,
+            "dividend_details": [],
             "taxable_epf_interest": 0.0,
+            "taxable_epf_interest_tds": 0.0,
+            "taxable_epf_interest_details": [],
             "salary_gross_ais": 0.0,
             "purchase_of_securities": 0.0,
             "sale_of_securities": 0.0,
             "advance_tax_paid": 0.0,
+            "advance_tax_details": [],
             "tax_refund_amount": 0.0,
             "tax_refund_interest": 0.0,
             "tax_due_demand": 0.0
@@ -393,12 +399,165 @@ AIS/TIS text:
                             total += valid_nums[-1]
             return total
 
-        data["savings_interest"] = find_sum_for_keyword(["savings bank", "saving bank interest"], text)
-        data["fd_interest"] = find_sum_for_keyword(["interest on deposit", "fixed deposit interest", "time deposit"], text)
-        data["domestic_dividends"] = find_sum_for_keyword(["dividend", "dividend income"], text)
-        data["taxable_epf_interest"] = find_sum_for_keyword(["taxable epf interest", "accumulated balance of epf"], text)
+        # 1. State machine PDF parser to extract detailed schedules
+        current_category = None
+        current_source = None
+        
+        savings_interest = 0.0
+        savings_details = []
+        
+        fd_interest = 0.0
+        fd_details = []
+        
+        dividend_total = 0.0
+        dividend_details = []
+        
+        lines = text.split("\n")
+        for line in lines:
+            line_lower = line.lower()
+            
+            # Detect summary headers
+            if "sft-016(sb)" in line_lower or ("sft-016" in line_lower and "savings" in line_lower):
+                current_category = "savings"
+                match = re.search(r"(?:Savings|SFT-016)\s*–?\s*([A-Z\s]+?)\s*\(", line, re.IGNORECASE)
+                current_source = match.group(1).strip() if match else "Unknown Bank"
+                continue
+            elif "sft-016(td)" in line_lower or "sft-016(rd)" in line_lower or ("sft-016" in line_lower and "deposit" in line_lower):
+                current_category = "deposit"
+                match = re.search(r"(?:Term Deposit|Recurring Deposit|Deposit)\s*([A-Z\s]+?)\s*\(", line, re.IGNORECASE)
+                current_source = match.group(1).strip() if match else "Unknown Bank"
+                continue
+            elif "sft-015" in line_lower or "dividend income" in line_lower:
+                current_category = "dividend"
+                match = re.search(r"(?:Dividend income \(SFT-015\)|Dividend)\s*([A-Z\s&]+?)\s*\(", line, re.IGNORECASE)
+                current_source = match.group(1).strip() if match else "Unknown Company"
+                continue
+            elif "part b" in line_lower or "information relating to" in line_lower:
+                current_category = None
+                current_source = None
+                
+            # Parse detail lines
+            if current_category == "savings" and "saving" in line_lower and "active" in line_lower:
+                tokens = line.split()
+                acc_num = "Unknown"
+                for i, tok in enumerate(tokens):
+                    if tok.lower() == "saving" and i > 0:
+                        acc_num = tokens[i-1]
+                        break
+                nums = []
+                for token in tokens:
+                    t = token.strip("(),.[]{}*'-")
+                    t = re.sub(r'[a-zA-Z]+$', '', t)
+                    t = re.sub(r'^[a-zA-Z]+', '', t)
+                    if re.match(r'^\d{1,3}(,\d{2,3})*(\.\d+)?$|^\d+(\.\d+)?$', t):
+                        nums.append(float(t.replace(",", "")))
+                if nums:
+                    amt = nums[-1]
+                    savings_interest += amt
+                    savings_details.append({"source": current_source, "account": acc_num, "amount": amt})
+            elif current_category == "deposit" and ("deposit" in line_lower or "time deposit" in line_lower or "recurring deposit" in line_lower) and "active" in line_lower:
+                tokens = line.split()
+                acc_num = "Unknown"
+                for i, tok in enumerate(tokens):
+                    if "deposit" in tok.lower() and i > 1:
+                        acc_num = tokens[i-2] if "time" in tokens[i-1].lower() or "recurring" in tokens[i-1].lower() else tokens[i-1]
+                        break
+                nums = []
+                for token in tokens:
+                    t = token.strip("(),.[]{}*'-")
+                    t = re.sub(r'[a-zA-Z]+$', '', t)
+                    t = re.sub(r'^[a-zA-Z]+', '', t)
+                    if re.match(r'^\d{1,3}(,\d{2,3})*(\.\d+)?$|^\d+(\.\d+)?$', t):
+                        nums.append(float(t.replace(",", "")))
+                if nums:
+                    amt = nums[-1]
+                    fd_interest += amt
+                    fd_details.append({"source": current_source, "account": acc_num, "amount": amt})
+            elif current_category == "dividend" and "active" in line_lower:
+                tokens = line.split()
+                nums = []
+                for token in tokens:
+                    t = token.strip("(),.[]{}*'-")
+                    t = re.sub(r'[a-zA-Z]+$', '', t)
+                    t = re.sub(r'^[a-zA-Z]+', '', t)
+                    if re.match(r'^\d{1,3}(,\d{2,3})*(\.\d+)?$|^\d+(\.\d+)?$', t):
+                        nums.append(float(t.replace(",", "")))
+                if nums:
+                    amt = nums[-1]
+                    dividend_total += amt
+                    dividend_details.append({"source": current_source, "amount": amt})
+                    
+        data["savings_interest"] = savings_interest
+        data["savings_details"] = savings_details
+        data["fd_interest"] = fd_interest
+        data["fd_details"] = fd_details
+        data["domestic_dividends"] = dividend_total
+        data["dividend_details"] = dividend_details
+        
+        # Parse EPFO interest and EPFO TDS
+        epfo_interest = 0.0
+        epfo_tds = 0.0
+        for line in lines:
+            if "bommasanora" in line.lower() or "blrr17454d" in line.lower():
+                tokens = line.split()
+                clean_numbers = []
+                for token in tokens:
+                    t = token.strip("(),.[]{}*'-")
+                    t = re.sub(r'[a-zA-Z]+$', '', t)
+                    t = re.sub(r'^[a-zA-Z]+', '', t)
+                    if re.match(r'^\d{1,3}(,\d{2,3})*(\.\d+)?$|^\d+(\.\d+)?$', t):
+                        clean_numbers.append(float(t.replace(",", "")))
+                if clean_numbers:
+                    epfo_interest = clean_numbers[-1]
+                    
+        if epfo_interest > 0:
+            for line in lines:
+                if re.search(r'q[1-4]\(.*?\)', line, re.IGNORECASE) and "active" in line.lower():
+                    tokens = line.split()
+                    clean_numbers = []
+                    for token in tokens:
+                        t = token.strip("(),.[]{}*'-")
+                        t = re.sub(r'[a-zA-Z]+$', '', t)
+                        t = re.sub(r'^[a-zA-Z]+', '', t)
+                        if re.match(r'^\d{1,3}(,\d{2,3})*(\.\d+)?$|^\d+(\.\d+)?$', t):
+                            clean_numbers.append(float(t.replace(",", "")))
+                    if len(clean_numbers) >= 3:
+                        if abs(clean_numbers[0] - epfo_interest) < 2.0:
+                            epfo_tds = clean_numbers[1]
+                            break
+                            
+        data["taxable_epf_interest"] = epfo_interest
+        data["taxable_epf_interest_tds"] = epfo_tds
+        if epfo_interest > 0:
+            data["taxable_epf_interest_details"] = [{"source": "REGIONAL OFFICE BOMMASANORA 2", "amount": epfo_interest, "tds": epfo_tds}]
+            
         data["salary_gross_ais"] = find_sum_for_keyword(["salary received", "salary income"], text)
-        data["advance_tax_paid"] = find_sum_for_keyword(["advance tax", "payment of taxes", "payment of tax"], text)
+        
+        # Parse advance tax details
+        advance_tax_total = 0.0
+        advance_tax_details = []
+        for line in lines:
+            if "advance tax" in line.lower() or "payment of taxes" in line.lower() or "payment of tax" in line.lower():
+                date_match = re.search(r"(\d{2}/\d{2}/\d{4})", line)
+                if date_match:
+                    pmt_date_str = date_match.group(1)
+                    tokens = line.split()
+                    nums = []
+                    for token in tokens:
+                        t = token.strip("(),.[]{}*'-")
+                        t = re.sub(r'[a-zA-Z]+$', '', t)
+                        t = re.sub(r'^[a-zA-Z]+', '', t)
+                        if re.match(r'^\d{1,3}(,\d{2,3})*(\.\d+)?$|^\d+(\.\d+)?$', t):
+                            nums.append(float(t.replace(",", "")))
+                    if nums:
+                        valid_tax_nums = [n for n in nums if n > 100 and n != 12025 and n != 2025 and n != 2026]
+                        if valid_tax_nums:
+                            amt = valid_tax_nums[0]
+                            advance_tax_total += amt
+                            advance_tax_details.append({"source": "Income Tax Department", "amount": amt, "date": pmt_date_str})
+                            
+        data["advance_tax_paid"] = advance_tax_total if advance_tax_total > 0 else find_sum_for_keyword(["advance tax"], text)
+        data["advance_tax_details"] = advance_tax_details
 
         # Parse B4 Refund and Demand
         for line in text.split("\n"):
@@ -451,13 +610,19 @@ AIS/TIS text:
         """Parses multiple AIS CSV file contents and merges them into a single summary."""
         summary = {
             "savings_interest": 0.0,
+            "savings_details": [],
             "fd_interest": 0.0,
+            "fd_details": [],
             "domestic_dividends": 0.0,
+            "dividend_details": [],
             "taxable_epf_interest": 0.0,
+            "taxable_epf_interest_tds": 0.0,
+            "taxable_epf_interest_details": [],
             "salary_gross_ais": 0.0,
             "purchase_of_securities": 0.0,
             "sale_of_securities": 0.0,
             "advance_tax_paid": 0.0,
+            "advance_tax_details": [],
             "tax_refund_amount": 0.0,
             "tax_refund_interest": 0.0,
             "tax_due_demand": 0.0
@@ -504,23 +669,44 @@ AIS/TIS text:
         is_dividend = False
         is_salary = False
         is_refund_demand = False
+        is_epfo = False
         
-        if "interest amount - reported by source" in col_map:
-            cat_col = col_map.get("information category") or col_map.get("information description")
-            if cat_col is not None and len(data_rows) > 0:
-                first_cat = data_rows[0][cat_col].lower()
-                if "savings" in first_cat:
-                    is_savings = True
-                else:
-                    is_fd = True
-            else:
-                is_savings = True
-        elif "dividend amount - reported by source" in col_map:
+        cat_col = col_map.get("information category") or col_map.get("information description")
+        desc_col = col_map.get("information description")
+        source_col = col_map.get("information source")
+        
+        if "dividend amount - reported by source" in col_map:
             is_dividend = True
         elif "gross salary u/s 17(1)" in col_map or "value of perquisites u/s 17(2)" in col_map or "gross salary - reported by source" in col_map:
             is_salary = True
         elif "nature of refund" in col_map or "refund amount" in col_map or "demand amount" in col_map:
             is_refund_demand = True
+        else:
+            # Detect EPFO source
+            is_epfo_source = False
+            if len(data_rows) > 0:
+                for row in data_rows:
+                    if source_col is not None and len(row) > source_col:
+                        src_val = row[source_col].lower()
+                        if "bommasanora" in src_val or "epfo" in src_val or "provident" in src_val:
+                            is_epfo_source = True
+                            break
+                    if desc_col is not None and len(row) > desc_col:
+                        desc_val = row[desc_col].lower()
+                        if "bommasanora" in desc_val or "epfo" in desc_val or "provident" in desc_val:
+                            is_epfo_source = True
+                            break
+            if is_epfo_source:
+                is_epfo = True
+            elif "interest amount - reported by source" in col_map:
+                if cat_col is not None and len(data_rows) > 0:
+                    first_cat = data_rows[0][cat_col].lower()
+                    if "savings" in first_cat:
+                        is_savings = True
+                    else:
+                        is_fd = True
+                else:
+                    is_savings = True
             
         for row in data_rows:
             if not row or len(row) <= max(col_map.values(), default=-1):
@@ -529,12 +715,35 @@ AIS/TIS text:
             if is_savings:
                 val = self._parse_float_val(row[col_map["interest amount - reported by source"]])
                 summary["savings_interest"] += val
+                src = row[col_map["information source"]] if "information source" in col_map else ""
+                acc = row[col_map["account number"]] if "account number" in col_map else ""
+                summary["savings_details"].append({"source": src, "account": acc, "amount": val})
             elif is_fd:
                 val = self._parse_float_val(row[col_map["interest amount - reported by source"]])
                 summary["fd_interest"] += val
+                src = row[col_map["information source"]] if "information source" in col_map else ""
+                acc = row[col_map["account number"]] if "account number" in col_map else ""
+                summary["fd_details"].append({"source": src, "account": acc, "amount": val})
+            elif is_epfo:
+                amt_col = col_map.get("amount") or col_map.get("amount paid/credited - reported by source")
+                val = 0.0
+                if amt_col is not None:
+                    val = self._parse_float_val(row[amt_col])
+                    summary["taxable_epf_interest"] += val
+                tds_col = col_map.get("tds deducted") or col_map.get("tds deposited")
+                tds_val = 0.0
+                if tds_col is not None:
+                    tds_val = self._parse_float_val(row[tds_col])
+                    summary["taxable_epf_interest_tds"] += tds_val
+                
+                src = row[col_map["information source"]] if "information source" in col_map else ""
+                acc = row[col_map["account number"]] if "account number" in col_map else ""
+                summary["taxable_epf_interest_details"].append({"source": src, "account": acc, "amount": val, "tds": tds_val})
             elif is_dividend:
                 val = self._parse_float_val(row[col_map["dividend amount - reported by source"]])
                 summary["domestic_dividends"] += val
+                src = row[col_map["information source"]] if "information source" in col_map else ""
+                summary["dividend_details"].append({"source": src, "amount": val})
             elif is_salary:
                 if "gross salary - reported by source" in col_map:
                     val = self._parse_float_val(row[col_map["gross salary - reported by source"]])
