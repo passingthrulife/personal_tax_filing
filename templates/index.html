@@ -1960,8 +1960,7 @@
                 title = "US Dividends Breakdown";
                 const csvDivs = globalProcessedData.parsed_raw.us_dividends_csv || [];
                 const official1042s = globalProcessedData.parsed_raw.us_dividends_1042s || [];
-                const match = Math.abs(globalProcessedData.parsed_raw.us_dividend_total -
-                    globalProcessedData.parsed_raw.us_1042s_total) <= 10;
+                const match = globalProcessedData.parsed_raw.us_dividends_match;
 
                 if (!match && csvDivs.length > 0 && official1042s.length > 0) {
                     const totalCsv = csvDivs.reduce((acc, curr) => acc + (curr.amount_usd || 0), 0).toFixed(2);
