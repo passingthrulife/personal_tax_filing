@@ -2419,8 +2419,6 @@
                             </tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
                                 <td style="padding: 0.6rem 0; color: var(--text-secondary);">Rate of Interest u/s 244A</td>
-                                <td style="padding: 0.6rem 0; text-align: right; color: #fff; font-weight: 600;">0.5% per month (6% p.a.)</td>
-                            </tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.95rem; font-weight: 600; color: #fff;">
                                 <td style="padding: 0.8rem 0;">Total Refund Interest (Taxable)</td>
                                 <td style="padding: 0.8rem 0; text-align: right; color: var(--success); font-size: 1.1rem; font-family: monospace;">${formatINR(refund_int)}</td>
@@ -2440,13 +2438,31 @@
             }
             
             const results = globalProcessedData.results;
-            const oldR = results.regimes.old;
-            const newR = results.regimes.new;
-            const rawAis = globalProcessedData.parsed_raw.ais || {};
             const optimal = results.optimal_regime;
+            const optR = results.regimes[optimal];
+            const rawAis = globalProcessedData.parsed_raw.ais || {};
+            const form16 = globalProcessedData.parsed_raw.form16 || {};
             
             const total_us_dividends_inr = results.form67_details.foreign_dividend_inr || 0;
             const total_us_interest_inr = results.form67_details.foreign_interest_inr || 0;
+            const netCG = results.capital_gains.net_gains || {};
+            const cgTax = optR.cg_tax || {};
+            
+            const isNew = optimal === 'new';
+            const fy = globalProcessedData.fy || "2025-26";
+            const stdDed = isNew ? (fy === "2025-26" ? 75000.0 : 50000.0) : 50000.0;
+            const profTax = isNew ? 0.0 : parseFloat(form16.professional_tax_16_ii || 0.0);
+            const deductionsSec16 = stdDed + profTax;
+            const chViaDeductions = optR.deductions ? parseFloat(optR.deductions.total || 0.0) : 0.0;
+            
+            const cgExemptionsList = results.capital_gains.exemptions || [];
+            const cgExemptionsTotal = cgExemptionsList.reduce((sum, item) => sum + parseFloat(item.exemption_amount || 0.0), 0.0);
+            const exemptionsByCat = results.capital_gains.exemptions_by_category || {};
+            const ltcgListedGross = (netCG.ltcg_listed || 0.0) + (exemptionsByCat.LTCG_Listed || 0.0);
+            const ltcgUnlistedGross = (netCG.ltcg_unlisted || 0.0) + (exemptionsByCat.LTCG_Unlisted || 0.0);
+            
+            const capitalGainsIncome = (netCG.stcg_listed || 0.0) + ltcgListedGross + ltcgUnlistedGross + (netCG.stcg_unlisted || 0.0) - cgExemptionsTotal;
+            const grossTotalIncome = optR.net_salary + optR.house_property_income + capitalGainsIncome + optR.other_sources_income + optR.vda_income;
             
             // Build savings list
             let savingsHtml = "";
@@ -2467,9 +2483,9 @@
                 savingsDetails.forEach(item => {
                     savingsHtml += `
                         <tr>
-                            <td><strong>\${item.source}</strong></td>
-                            <td class="font-mono">\${item.account || 'N/A'}</td>
-                            <td class="text-right font-mono">\${formatINR(item.amount)}</td>
+                            <td><strong>${item.source}</strong></td>
+                            <td class="font-mono">${item.account || 'N/A'}</td>
+                            <td class="text-right font-mono">${formatINR(item.amount)}</td>
                         </tr>
                     `;
                 });
@@ -2498,9 +2514,9 @@
                 fdDetails.forEach(item => {
                     fdHtml += `
                         <tr>
-                            <td><strong>\${item.source}</strong></td>
-                            <td class="font-mono">\${item.account || 'N/A'}</td>
-                            <td class="text-right font-mono">\${formatINR(item.amount)}</td>
+                            <td><strong>${item.source}</strong></td>
+                            <td class="font-mono">${item.account || 'N/A'}</td>
+                            <td class="text-right font-mono">${formatINR(item.amount)}</td>
                         </tr>
                     `;
                 });
@@ -2528,8 +2544,8 @@
                 divDetails.forEach(item => {
                     divHtml += `
                         <tr>
-                            <td><strong>\${item.source}</strong></td>
-                            <td class="text-right font-mono">\${formatINR(item.amount)}</td>
+                            <td><strong>${item.source}</strong></td>
+                            <td class="text-right font-mono">${formatINR(item.amount)}</td>
                         </tr>
                     `;
                 });
@@ -2541,15 +2557,15 @@
 
             // Build US Dividends list
             let usDivHtml = "";
-            const csvDivs = globalProcessedData.parsed_raw.us_dividends_csv || [];
+            const csvDivs = globalProcessedData.parsed_raw.us_dividends || [];
             if (csvDivs.length > 0) {
                 usDivHtml = `
-                    <div class="section-title">Schedule OS - US Stock Dividends Details (CSV Statement)</div>
+                    <div class="section-title">Schedule OS - US Stock Dividends Details (Form 1042-S Reconciled)</div>
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Company</th>
+                                <th>File Source / Date</th>
+                                <th>Company / Details</th>
                                 <th class="text-right">Gross USD</th>
                                 <th class="text-right">Tax Withheld USD</th>
                                 <th class="text-right">TT Buying Rate</th>
@@ -2561,12 +2577,12 @@
                 csvDivs.forEach(r => {
                     usDivHtml += `
                         <tr>
-                            <td>\${r.date || "N/A"}</td>
-                            <td><strong>\${r.company || "N/A"}</strong></td>
-                            <td class="text-right font-mono">$\${(r.amount_usd || 0).toFixed(2)}</td>
-                            <td class="text-right font-mono">$\${(r.withholding_usd || 0).toFixed(2)}</td>
-                            <td class="text-right font-mono">\${(r.rate_used || 0).toFixed(2)}</td>
-                            <td class="text-right font-mono">\${formatINR(r.amount_inr || 0)}</td>
+                            <td>${r.date || "N/A"}</td>
+                            <td><strong>${r.source || "N/A"}</strong></td>
+                            <td class="text-right font-mono">$${(r.amount_usd || 0).toFixed(2)}</td>
+                            <td class="text-right font-mono">$${(r.withholding_usd || 0).toFixed(2)}</td>
+                            <td class="text-right font-mono">${(r.rate_used || 0).toFixed(2)}</td>
+                            <td class="text-right font-mono">${formatINR(r.amount_inr || 0)}</td>
                         </tr>
                     `;
                 });
@@ -2575,10 +2591,10 @@
                     </table>
                 `;
             }
-
+            
             // Build Capital Gains Stock transactions list
             let cgStockHtml = "";
-            const stockSales = globalProcessedData.parsed_raw.stock_sales || [];
+            const stockSales = results.capital_gains.transactions || [];
             if (stockSales.length > 0) {
                 cgStockHtml = `
                     <div class="section-title">Schedule CG - Stock Sales Transactions Details</div>
@@ -2602,15 +2618,15 @@
                     const gainColor = t.gain_inr >= 0 ? "success-val" : "danger-val";
                     cgStockHtml += `
                         <tr>
-                            <td><strong>\${t.company || t.isin || 'Stock'}</strong></td>
-                            <td>\${t.buy_date}</td>
-                            <td>\${t.sell_date}</td>
-                            <td class="text-right">\${t.quantity || 0}</td>
-                            <td class="text-right font-mono">\${formatINR(t.buy_val_inr)}</td>
-                            <td class="text-right font-mono">\${formatINR(t.sell_val_inr)}</td>
-                            <td class="text-right font-mono \${gainColor}">\${t.gain_inr >= 0 ? '+' : ''}\${formatINR(t.gain_inr)}</td>
-                            <td>\${t.section}</td>
-                            <td>\${t.rate}</td>
+                            <td><strong>${t.symbol || 'Stock'}</strong></td>
+                            <td>${t.buy_date}</td>
+                            <td>${t.sell_date}</td>
+                            <td class="text-right">${t.quantity || 0}</td>
+                            <td class="text-right font-mono">${formatINR(t.buy_val_inr)}</td>
+                            <td class="text-right font-mono">${formatINR(t.sell_val_inr)}</td>
+                            <td class="text-right font-mono ${gainColor}">${t.gain_inr >= 0 ? '+' : ''}${formatINR(t.gain_inr)}</td>
+                            <td>${t.section}</td>
+                            <td>${t.rate}</td>
                         </tr>
                     `;
                 });
@@ -2619,7 +2635,7 @@
                     </table>
                 `;
             }
-
+            
             // Build exemptions list
             let exemptionsHtml = "";
             const cgExemptions = results.cg_exemptions_claimed || [];
@@ -2640,10 +2656,10 @@
                 cgExemptions.forEach(item => {
                     exemptionsHtml += `
                         <tr>
-                            <td><strong>\${item.asset_sold_details || 'US Stock Sales'}</strong></td>
-                            <td>Section \${item.exemption_section}</td>
-                            <td>\${item.new_asset_details || 'Residential House'}</td>
-                            <td class="text-right font-mono">\${formatINR(item.exemption_amount)}</td>
+                            <td><strong>${item.asset_sold_details || 'US Stock Sales'}</strong></td>
+                            <td>Section ${item.exemption_section}</td>
+                            <td>${item.new_asset_details || 'Residential House'}</td>
+                            <td class="text-right font-mono">${formatINR(item.exemption_amount)}</td>
                         </tr>
                     `;
                 });
@@ -2652,7 +2668,7 @@
                     </table>
                 `;
             }
-
+            
             // Create printable window
             const pWindow = window.open("", "_blank");
             pWindow.document.write(`
@@ -2664,7 +2680,7 @@
                             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                             color: #1f2937;
                             margin: 15mm 20mm;
-                            font-size: 10pt;
+                            font-size: 9.5pt;
                             line-height: 1.5;
                         }
                         h1, h2, h3, h4 {
@@ -2689,15 +2705,41 @@
                             font-size: 9pt;
                             color: #4b5563;
                         }
-                        .section-title {
-                            font-size: 11pt;
+                        .summary-grid {
+                            display: grid;
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 1rem;
+                            margin-bottom: 2rem;
+                            background-color: #f8fafc;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 6px;
+                            padding: 1rem;
+                        }
+                        .summary-card {
+                            text-align: center;
+                        }
+                        .summary-label {
+                            font-size: 8pt;
+                            text-transform: uppercase;
+                            color: #64748b;
+                            font-weight: 600;
+                            margin-bottom: 0.25rem;
+                        }
+                        .summary-value {
+                            font-size: 13pt;
                             font-weight: bold;
-                            border-bottom: 1px solid #e5e7eb;
+                            color: #0f172a;
+                            font-family: Menlo, Monaco, monospace;
+                        }
+                        .section-title {
+                            font-size: 10.5pt;
+                            font-weight: bold;
+                            border-bottom: 1.5px solid #0f172a;
                             padding-bottom: 0.25rem;
                             margin-top: 2rem;
                             margin-bottom: 0.75rem;
                             text-transform: uppercase;
-                            color: #1e3a8a;
+                            color: #0f172a;
                             page-break-after: avoid;
                         }
                         table {
@@ -2707,17 +2749,18 @@
                             page-break-inside: avoid;
                         }
                         th {
-                            background-color: #f3f4f6;
+                            background-color: #f8fafc;
                             font-weight: bold;
                             text-align: left;
-                            padding: 0.5rem;
-                            border-bottom: 1px solid #d1d5db;
-                            font-size: 9pt;
-                            color: #374151;
+                            padding: 0.4rem 0.5rem;
+                            border-bottom: 1.5px solid #cbd5e1;
+                            font-size: 8.5pt;
+                            color: #475569;
+                            text-transform: uppercase;
                         }
                         td {
-                            padding: 0.5rem;
-                            border-bottom: 1px solid #e5e7eb;
+                            padding: 0.4rem 0.5rem;
+                            border-bottom: 1px solid #f1f5f9;
                             font-size: 9.5pt;
                         }
                         .text-right {
@@ -2731,12 +2774,18 @@
                             background-color: #f8fafc;
                             font-weight: bold;
                         }
+                        .double-border-row {
+                            border-top: 1.5px solid #0f172a;
+                            border-bottom: 2px double #0f172a;
+                            font-weight: bold;
+                            background-color: #f8fafc;
+                        }
                         .success-val {
-                            color: #15803d;
+                            color: #16a34a;
                             font-weight: bold;
                         }
                         .danger-val {
-                            color: #b91c1c;
+                            color: #dc2626;
                             font-weight: bold;
                         }
                     </style>
@@ -2744,154 +2793,329 @@
                 <body>
                     <div class="header">
                         <div>
-                            <div class="header-title">AATMANIRBHAR TAX</div>
-                            <div style="font-size: 10pt; color: #4b5563; margin-top: 0.25rem;">Personal Income Tax Computation Report</div>
+                            <div class="header-title">AATMANIRBHAR TAX REPORT</div>
+                            <div style="font-size: 10pt; color: #4b5563; margin-top: 0.25rem;">Personal Income Tax Computation Sheet (Optimal Regime)</div>
                         </div>
                         <div class="header-meta">
                             <div><strong>Assessment Year:</strong> 2026-27 (FY 2025-26)</div>
-                            <div><strong>Taxpayer PAN:</strong> \\\${globalProcessedData.pan}</div>
-                            <div><strong>Date Generated:</strong> \\\${new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+                            <div><strong>Taxpayer PAN:</strong> ${globalProcessedData.pan}</div>
+                            <div><strong>Date Generated:</strong> ${new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
                         </div>
                     </div>
                     
-                    <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
-                        <h4 style="margin: 0 0 0.5rem 0; color: #1e3a8a; font-size: 11pt;">Tax Filing Recommendation</h4>
-                        <p style="margin: 0; font-size: 9.5pt; color: #1e40af; line-height: 1.4;">
-                            Based on your parsed financial records (Form 16, AIS/TIS Statement, US Stock realizations, and US Dividends), 
-                            filing under the <strong>\\\${optimal === 'new' ? 'NEW TAX REGIME' : 'OLD TAX REGIME'}</strong> is optimal for you, 
-                            resulting in a tax savings of <strong>\\\${formatINR(Math.abs(oldR.final_due_or_refund - newR.final_due_or_refund))}</strong>.
-                        </p>
+                    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.8rem 1rem; border-radius: 6px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 10pt; color: #166534;">
+                            👉 Filing under the <strong>${optimal === 'new' ? 'NEW TAX REGIME (Section 115BAC)' : 'OLD TAX REGIME'}</strong> is most beneficial, saving you <strong>${formatINR(Math.abs(results.regimes.old.final_due_or_refund - results.regimes.new.final_due_or_refund))}</strong> compared to the alternative.
+                        </span>
+                        <span style="background-color: #16a34a; color: #fff; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; font-size: 8.5pt; text-transform: uppercase;">
+                            ${optimal} Regime Selected
+                        </span>
                     </div>
 
-                    <div class="section-title">Regime Comparison & Tax Computation Sheet</div>
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-label">Gross Total Income</div>
+                            <div class="summary-value">${formatINR(grossTotalIncome)}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Deductions Claimed</div>
+                            <div class="summary-value">${formatINR(chViaDeductions)}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Taxable Income</div>
+                            <div class="summary-value">${formatINR(optR.total_taxable_income)}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">${optR.final_due_or_refund < 0 ? 'Refund Claimed' : 'Tax Due Payable'}</div>
+                            <div class="summary-value ${optR.final_due_or_refund < 0 ? 'success-val' : 'danger-val'}">${formatINR(Math.abs(optR.final_due_or_refund))}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">I. Computation of Total Income under Beneficial Regime</div>
                     <table>
                         <thead>
                             <tr>
-                                <th>Income Component / Tax Particulars</th>
-                                <th class="text-right">New Regime (INR)</th>
-                                <th class="text-right">Old Regime (INR)</th>
+                                <th>Heads of Income / Particulars</th>
+                                <th class="text-right">Particulars (INR)</th>
+                                <th class="text-right">Net Head Income (INR)</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Gross Salary (Section 17)</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.gross_salary)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.gross_salary)}</td>
+                                <td><strong>1. Salaries (Section 15 - 17)</strong></td>
+                                <td></td>
+                                <td></td>
                             </tr>
                             <tr>
-                                <td>Deductions under Section 16 (Standard, etc.)</td>
-                                <td class="text-right font-mono">-\\\${formatINR(newR.deductions_sec16)}</td>
-                                <td class="text-right font-mono">-\\\${formatINR(oldR.deductions_sec16)}</td>
+                                <td style="padding-left: 1.5rem; color: #475569;">Gross Salary u/s 17(1), 17(2) & 17(3)</td>
+                                <td class="text-right font-mono">${formatINR(optR.gross_salary)}</td>
+                                <td></td>
                             </tr>
                             <tr>
-                                <td>Income from Other Sources (Savings, FDs, Dividends, EPF)</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.other_sources_income - total_us_dividends_inr - total_us_interest_inr - (newR.tax_refund_interest || 0))}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.other_sources_income - total_us_dividends_inr - total_us_interest_inr - (oldR.tax_refund_interest || 0))}</td>
+                                <td style="padding-left: 1.5rem; color: #475569;">Less: Deductions u/s 16 (Standard Deduction & Prof Tax)</td>
+                                <td class="text-right font-mono">-${formatINR(deductionsSec16)}</td>
+                                <td></td>
                             </tr>
                             <tr>
-                                <td>Add: Last Year Tax Refund Interest u/s 244A</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.tax_refund_interest || 0)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.tax_refund_interest || 0)}</td>
+                                <td style="padding-left: 1.5rem; color: #475569;">Less: HRA Exemption u/s 10(13A)</td>
+                                <td class="text-right font-mono">-${formatINR(optR.hra_exempt || 0)}</td>
+                                <td class="text-right font-mono highlight-row">${formatINR(optR.net_salary)}</td>
+                            </tr>
+                            
+                            <tr>
+                                <td><strong>2. Income from House Property (Section 22 - 24)</strong></td>
+                                <td></td>
+                                <td></td>
                             </tr>
                             <tr>
-                                <td>Capital Gains (US Stocks Net Realization)</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.capital_gains_income)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.capital_gains_income)}</td>
+                                <td style="padding-left: 1.5rem; color: #475569;">Loss from Self-occupied property u/s 24(b) (Home Loan Interest)</td>
+                                <td></td>
+                                <td class="text-right font-mono highlight-row">${formatINR(optR.house_property_income)}</td>
                             </tr>
+
+                            <tr>
+                                <td><strong>3. Income from Capital Gains (Section 45)</strong></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Short-Term Capital Gains (Listed - Sec 111A)</td>
+                                <td class="text-right font-mono">${formatINR(netCG.stcg_listed || 0)}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Long-Term Capital Gains (Listed - Sec 112A)</td>
+                                <td class="text-right font-mono">${formatINR(ltcgListedGross)}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Long-Term Capital Gains (Unlisted - Sec 112 / US Stocks)</td>
+                                <td class="text-right font-mono">${formatINR(ltcgUnlistedGross)}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Short-Term Capital Gains (Unlisted / US RSUs)</td>
+                                <td class="text-right font-mono">${formatINR(netCG.stcg_unlisted || 0)}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Less: Reinvestment Exemptions claimed u/s 54F / 54EC</td>
+                                <td class="text-right font-mono">-${formatINR(cgExemptionsTotal)}</td>
+                                <td class="text-right font-mono highlight-row">${formatINR(capitalGainsIncome)}</td>
+                            </tr>
+
+                            <tr>
+                                <td><strong>4. Income from Other Sources (Section 56)</strong></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Savings Bank Interest</td>
+                                <td class="text-right font-mono">${formatINR(parseFloat(rawAis.savings_interest || 0))}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Deposits Interest (FDs/RDs)</td>
+                                <td class="text-right font-mono">${formatINR(parseFloat(rawAis.fd_interest || 0))}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Domestic Dividends</td>
+                                <td class="text-right font-mono">${formatINR(parseFloat(rawAis.domestic_dividends || 0))}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Taxable EPF Interest</td>
+                                <td class="text-right font-mono">${formatINR(parseFloat(rawAis.taxable_epf_interest || 0))}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Foreign Dividends (US Stock Dividends)</td>
+                                <td class="text-right font-mono">${formatINR(total_us_dividends_inr)}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 1.5rem; color: #475569;">Last Year Tax Refund Interest u/s 244A</td>
+                                <td class="text-right font-mono">${formatINR(optR.tax_refund_interest || 0)}</td>
+                                <td class="text-right font-mono highlight-row">${formatINR(optR.other_sources_income)}</td>
+                            </tr>
+
+                            <tr>
+                                <td><strong>5. Virtual Digital Assets (VDA / Crypto Gains)</strong></td>
+                                <td></td>
+                                <td class="text-right font-mono highlight-row">${formatINR(optR.vda_income || 0)}</td>
+                            </tr>
+
                             <tr class="highlight-row">
                                 <td>Gross Total Income (GTI)</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.gross_total_income)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.gross_total_income)}</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(grossTotalIncome)}</td>
                             </tr>
                             <tr>
-                                <td>Deductions under Chapter VI-A (80C, 80D, 80TTA)</td>
-                                <td class="text-right font-mono">-\\\${formatINR(newR.chapter_via_deductions)}</td>
-                                <td class="text-right font-mono">-\\\${formatINR(oldR.chapter_via_deductions)}</td>
+                                <td>Less: Deductions under Chapter VI-A (80C, 80D, 80TTA/B)</td>
+                                <td></td>
+                                <td class="text-right font-mono">-${formatINR(chViaDeductions)}</td>
                             </tr>
-                            <tr class="highlight-row">
-                                <td>Total Taxable Income</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.total_taxable_income)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.total_taxable_income)}</td>
-                            </tr>
-                            <tr style="border-top: 2px solid #000;">
-                                <td>Basic Tax (including special rates u/s 112/111A)</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.basic_tax)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.basic_tax)}</td>
-                            </tr>
-                            <tr>
-                                <td>Surcharge (Capped / Regular rates)</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.surcharge)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.surcharge)}</td>
-                            </tr>
-                            <tr>
-                                <td>Health and Education Cess (4%)</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.health_cess)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.health_cess)}</td>
-                            </tr>
-                            <tr class="highlight-row">
-                                <td>Gross Tax Liability</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.gross_tax_liability)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.gross_tax_liability)}</td>
-                            </tr>
-                            <tr>
-                                <td>Less: Relief under Section 90 (FTC Claimed)</td>
-                                <td class="text-right font-mono">-\\\${formatINR(newR.relief_sec90)}</td>
-                                <td class="text-right font-mono">-\\\${formatINR(oldR.relief_sec90)}</td>
-                            </tr>
-                            <tr class="highlight-row">
-                                <td>Net Tax Liability</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.net_tax_payable)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.net_tax_payable)}</td>
-                            </tr>
-                            <tr>
-                                <td>Add: Interest u/s 234B</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.interest_234b)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.interest_234b)}</td>
-                            </tr>
-                            <tr>
-                                <td>Add: Interest u/s 234C</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.interest_234c)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.interest_234c)}</td>
-                            </tr>
-                            <tr>
-                                <td>Less: Total TDS Credited (Form 16 + EPFO TDS)</td>
-                                <td class="text-right font-mono">-\\\${formatINR(newR.tds_credited)}</td>
-                                <td class="text-right font-mono">-\\\${formatINR(oldR.tds_credited)}</td>
-                            </tr>
-                            <tr>
-                                <td>Less: Advance Tax Paid</td>
-                                <td class="text-right font-mono">-\\\${formatINR(newR.advance_tax_paid)}</td>
-                                <td class="text-right font-mono">-\\\${formatINR(oldR.advance_tax_paid)}</td>
-                            </tr>
-                            <tr>
-                                <td>Add: Tax Due / AIS Demand</td>
-                                <td class="text-right font-mono">\\\${formatINR(newR.tax_due_demand)}</td>
-                                <td class="text-right font-mono">\\\${formatINR(oldR.tax_due_demand)}</td>
-                            </tr>
-                            <tr class="highlight-row" style="background-color: #f0fdf4; border-top: 2px solid #16a34a; border-bottom: 2px solid #16a34a;">
-                                <td style="font-size: 11pt;">\\\${newR.final_due_or_refund < 0 ? 'NET REFUND CLAIMED' : 'NET TAX PAYABLE DUE'}</td>
-                                <td class="text-right font-mono success-val" style="font-size: 11pt;">\\\${formatINR(Math.abs(newR.final_due_or_refund))}</td>
-                                <td class="text-right font-mono \\\${oldR.final_due_or_refund < 0 ? 'success-val' : 'danger-val'}" style="font-size: 11pt;">\\\${formatINR(Math.abs(oldR.final_due_or_refund))}</td>
+                            <tr class="double-border-row">
+                                <td>TOTAL TAXABLE INCOME</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.total_taxable_income)}</td>
                             </tr>
                         </tbody>
                     </table>
 
-                    \\\${savingsHtml}
-                    \\\${fdHtml}
-                    \\\${divHtml}
-                    \\\${usDivHtml}
-                    \\\${cgStockHtml}
-                    \\\${exemptionsHtml}
+                    <div class="section-title">II. Computation of Tax Liability under Heads of Income</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Particulars / Tax Rate applied</th>
+                                <th class="text-right">Taxable Amount (INR)</th>
+                                <th class="text-right">Tax Calculated (INR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Tax on Slab Income (Salary + Other Sources + US unlisted STCG)</td>
+                                <td class="text-right font-mono">${formatINR(optR.taxable_slab_income)}</td>
+                                <td class="text-right font-mono">${formatINR(optR.slab_tax)}</td>
+                            </tr>
+                            <tr>
+                                <td>Special Tax on Listed STCG u/s 111A</td>
+                                <td class="text-right font-mono">${formatINR(netCG.stcg_listed || 0)}</td>
+                                <td class="text-right font-mono">${formatINR(cgTax.stcg_listed || 0)}</td>
+                            </tr>
+                            <tr>
+                                <td>Special Tax on Listed LTCG u/s 112A (above exemption)</td>
+                                <td class="text-right font-mono">${formatINR(Math.max(0, (netCG.ltcg_listed || 0) - (optimal === 'new' ? 125000 : 100000)))}</td>
+                                <td class="text-right font-mono">${formatINR(cgTax.ltcg_listed || 0)}</td>
+                            </tr>
+                            <tr>
+                                <td>Special Tax on Unlisted LTCG u/s 112 (US Stocks)</td>
+                                <td class="text-right font-mono">${formatINR(netCG.ltcg_unlisted || 0)}</td>
+                                <td class="text-right font-mono">${formatINR(cgTax.ltcg_unlisted || 0)}</td>
+                            </tr>
+                            <tr>
+                                <td>Special Tax on VDA Gains u/s 115BBH (30%)</td>
+                                <td class="text-right font-mono">${formatINR(optR.vda_income || 0)}</td>
+                                <td class="text-right font-mono">${formatINR(optR.vda_tax || 0)}</td>
+                            </tr>
+                            <tr class="highlight-row">
+                                <td>BASIC TAX PAYABLE (slab + special rates)</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.basic_tax)}</td>
+                            </tr>
+                            <tr>
+                                <td>Add: Surcharge</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.surcharge)}</td>
+                            </tr>
+                            <tr>
+                                <td>Add: Health and Education Cess (4%)</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.cess)}</td>
+                            </tr>
+                            <tr class="highlight-row">
+                                <td>GROSS TAX LIABILITY</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.total_tax_before_relief)}</td>
+                            </tr>
+                            <tr>
+                                <td>Less: Relief under Section 90 (Form 67 FTC Claim)</td>
+                                <td></td>
+                                <td class="text-right font-mono">-${formatINR(optR.ftc_relief)}</td>
+                            </tr>
+                            <tr class="double-border-row">
+                                <td>NET TAX PAYABLE</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.net_tax_payable)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="section-title">III. Interest Charges, Tax Credits & Final Balance</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tax Credit Component / Interest Accrual</th>
+                                <th class="text-right">Deductions (INR)</th>
+                                <th class="text-right">Additions (INR)</th>
+                                <th class="text-right">Balance Net (INR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Net Tax Payable (after DTAA FTC relief)</td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.net_tax_payable)}</td>
+                            </tr>
+                            <tr>
+                                <td>Add: Interest under Section 234B (Default of Advance Tax)</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.interest_234b)}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Add: Interest under Section 234C (Shortfall of Installments)</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.interest_234c)}</td>
+                                <td></td>
+                            </tr>
+                            <tr class="highlight-row">
+                                <td>Total Tax & Interest Liabilities</td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.total_tax_surcharge_interest)}</td>
+                            </tr>
+                            <tr>
+                                <td>Less: TDS Deducted u/s 192 (Form 16 Salary)</td>
+                                <td class="text-right font-mono">-${formatINR(parseFloat(form16.tds_deducted || 0))}</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Less: EPFO TDS Deducted u/s 194A (EPF Taxable Interest)</td>
+                                <td class="text-right font-mono">-${formatINR(parseFloat(rawAis.taxable_epf_interest_tds || 0))}</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Less: Advance Tax Paid (Installments June/Sept/Dec/March)</td>
+                                <td class="text-right font-mono">-${formatINR(optR.advance_tax_paid)}</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Add: Prior Year Tax Due Demand</td>
+                                <td></td>
+                                <td class="text-right font-mono">${formatINR(optR.tax_due_demand)}</td>
+                                <td></td>
+                            </tr>
+                            <tr class="double-border-row ${optR.final_due_or_refund < 0 ? 'success-val' : 'danger-val'}">
+                                <td style="font-size: 11pt;">${optR.final_due_or_refund < 0 ? 'FINAL NET REFUND CLAIMED' : 'FINAL NET TAX PAYABLE DUE'}</td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-right font-mono" style="font-size: 11pt;">${formatINR(Math.abs(optR.final_due_or_refund))}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    ${savingsHtml}
+                    ${fdHtml}
+                    ${divHtml}
+                    ${usDivHtml}
+                    ${cgStockHtml}
+                    ${exemptionsHtml}
                     
-                    <div style="margin-top: 3rem; text-align: center; font-size: 8pt; color: #9ca3af; border-top: 1px dashed #e5e7eb; padding-top: 1rem;">
-                        This is an automated tax computation sheet prepared by Aatmanirbhar Tax. Verify calculations u/s 112/234B/234C before filing.
+                    <div style="margin-top: 3rem; text-align: center; font-size: 8pt; color: #9ca3af; border-top: 1px dashed #e5e7eb; padding-top: 1rem; page-break-inside: avoid;">
+                        This is an automated tax computation sheet prepared by Aatmanirbhar Tax. Verify all calculations u/s 112/234B/234C before filing your returns.
                     </div>
                     
                     <script>
                         window.onload = function() {
                             window.print();
                         }
-                    <\/s\${""}cript>
+                    <\/s${""}cript>
                 </body>
                 </html>
             `);

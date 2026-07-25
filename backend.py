@@ -74,7 +74,8 @@ def process_tax():
         "stock_sales": [],
         "us_dividends": [],
         "us_dividends_1042s": [],
-        "us_interest": []
+        "us_interest": [],
+        "pan": pan.upper()
     }
     
     warnings = []
@@ -442,6 +443,7 @@ def process_tax():
 
         response_data = {
             "success": True,
+            "pan": pan.upper(),
             "results": tax_results,
             "parsed_raw": parsed_data,
             "warnings": warnings,
