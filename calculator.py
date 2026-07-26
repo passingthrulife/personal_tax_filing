@@ -853,7 +853,8 @@ class TaxCalculator:
             # TDS and Advance Tax credits
             tds_employer = float(form16.get("tds_deducted", 0.0))
             tds_epfo = float(ais.get("taxable_epf_interest_tds", 0.0))
-            total_tds = tds_employer + tds_epfo
+            tds_deposits = float(ais.get("tds_on_deposit_interest", 0.0))
+            total_tds = tds_employer + tds_epfo + tds_deposits
             
             # Calculate Section 234B and 234C interest
             interest_234b, interest_234c = self.calculate_234_interest(

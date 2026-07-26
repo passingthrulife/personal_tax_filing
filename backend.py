@@ -133,7 +133,7 @@ def process_tax():
     if ais_csv_data and ais_pdf_data:
         merged_ais = {}
         all_keys = set(list(ais_csv_data.keys()) + list(ais_pdf_data.keys()))
-        detail_keys = ["savings_details", "fd_details", "dividend_details", "advance_tax_details", "taxable_epf_interest_details"]
+        detail_keys = ["savings_details", "fd_details", "dividend_details", "advance_tax_details", "taxable_epf_interest_details", "tds_on_deposit_interest_details"]
         
         for key in all_keys:
             if key in detail_keys:
@@ -160,14 +160,14 @@ def process_tax():
         parsed_data["ais"] = merged_ais
         logger.info("Successfully merged AIS data from both CSV and PDF files.")
     elif ais_csv_data:
-        for key in ["savings_details", "fd_details", "dividend_details", "advance_tax_details", "taxable_epf_interest_details"]:
+        for key in ["savings_details", "fd_details", "dividend_details", "advance_tax_details", "taxable_epf_interest_details", "tds_on_deposit_interest_details"]:
             if key in ais_csv_data:
                 for item in ais_csv_data[key]:
                     if "(" in item.get("source", ""):
                         item["source"] = item["source"].split("(")[0].strip()
         parsed_data["ais"] = ais_csv_data
     elif ais_pdf_data:
-        for key in ["savings_details", "fd_details", "dividend_details", "advance_tax_details", "taxable_epf_interest_details"]:
+        for key in ["savings_details", "fd_details", "dividend_details", "advance_tax_details", "taxable_epf_interest_details", "tds_on_deposit_interest_details"]:
             if key in ais_pdf_data:
                 for item in ais_pdf_data[key]:
                     if "(" in item.get("source", ""):

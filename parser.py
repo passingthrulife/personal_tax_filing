@@ -321,6 +321,7 @@ Required Keys:
 - "fd_interest": (float, total interest from fixed deposits / recurring deposits)
 - "domestic_dividends": (float, total dividend income from Indian companies)
 - "taxable_epf_interest": (float, taxable interest on EPF contributions exceeding 2.5L u/s 10(11)/10(12))
+- "taxable_epf_interest_tds": (float, total TDS deducted on EPFO interest)
 - "salary_gross_ais": (float, gross salary as reported in AIS, to verify against Form 16)
 - "purchase_of_securities": (float, total purchase of mutual funds / shares)
 - "sale_of_securities": (float, total sale of mutual funds / shares)
@@ -328,6 +329,8 @@ Required Keys:
 - "tax_refund_amount": (float, total income tax refund amount received from last year, under Part B4 / Demand & Refund)
 - "tax_refund_interest": (float, estimate of interest on the refund u/s 244A, which is 0.5% per month or part of a month from April 1 of AY to payment date)
 - "tax_due_demand": (float, outstanding tax demand / tax due from last year, under Part B4 / Demand & Refund)
+- "tds_on_deposit_interest": (float, total TDS deducted on interest other than salary and EPFO under Section 194A)
+- "tds_on_deposit_interest_details": (list of dicts, detailed breakdown of TDS deducted on deposits, e.g. [{"source": "ICICI Bank", "amount": 16758.0, "tds": 1676.0}])
 
 AIS/TIS text:
 {text}
@@ -368,7 +371,9 @@ AIS/TIS text:
             "advance_tax_details": [],
             "tax_refund_amount": 0.0,
             "tax_refund_interest": 0.0,
-            "tax_due_demand": 0.0
+            "tax_due_demand": 0.0,
+            "tds_on_deposit_interest": 0.0,
+            "tds_on_deposit_interest_details": []
         }
 
         # Match blocks containing keywords and sum them using a clean number tokenizer
@@ -595,6 +600,80 @@ AIS/TIS text:
                     except Exception as ex:
                         logger.warning(f"Error parsing demand in PDF regex fallback: {ex}")
 
+        # Parse Part B1 TDS-194A and TDS-192 sections from the PDF text
+        tds_on_deposit_interest = 0.0
+        tds_on_deposit_interest_details = []
+        
+        current_tds_cat = None
+        current_tds_source = None
+        
+        for line in text.split("\n"):
+            line_lower = line.lower()
+            
+            # Detect TDS headers
+            if "tds-192" in line_lower:
+                current_tds_cat = "salary"
+                # Extract source: e.g. "VMWARE SOFTWARE INDIA PRIVATE LIMITED (BLRV06254D)"
+                match = re.search(r"tds-192\s*Salary received \(Section 192\)\s*(.*?)(?:\s+\d+|\s*$)", line, re.IGNORECASE)
+                current_tds_source = match.group(1).strip() if match else "Unknown Employer"
+                continue
+            elif "tds-194a" in line_lower:
+                current_tds_cat = "194a"
+                # Extract source: e.g. "ICICI BANK LIMITED (MUMI04813E)"
+                # Line matches: TDS-194A Interest other than "Interest on Securities" received (Section 194A)ICICI BANK LIMITED (MUMI04813E) 4 95,471
+                match = re.search(r"tds-194a.*?received \(Section 194a\)\s*(.*?)(?:\s+\d+|\s*$)", line, re.IGNORECASE)
+                if match:
+                    current_tds_source = match.group(1).strip()
+                else:
+                    current_tds_source = "Unknown Bank"
+                continue
+            elif "part b2" in line_lower or "part b3" in line_lower or "part b4" in line_lower:
+                current_tds_cat = None
+                current_tds_source = None
+                
+            # Parse detail lines in Part B1
+            if current_tds_cat in ["salary", "194a"]:
+                if re.search(r'q[1-4]\(.*?\) \d{2}/\d{2}/\d{4}', line_lower):
+                    tokens = line.split()
+                    date_idx = -1
+                    for idx, tok in enumerate(tokens):
+                        if re.match(r'^\d{2}/\d{2}/\d{4}$', tok):
+                            date_idx = idx
+                            break
+                            
+                    if date_idx != -1:
+                        # Extract numbers after the date
+                        nums = []
+                        for tok in tokens[date_idx+1:]:
+                            t = tok.strip("(),.[]{}*'-")
+                            t = re.sub(r'[a-zA-Z]+$', '', t)
+                            t = re.sub(r'^[a-zA-Z]+', '', t)
+                            if re.match(r'^\d{1,3}(,\d{2,3})*(\.\d+)?$|^\d+(\.\d+)?$', t):
+                                nums.append(float(t.replace(",", "")))
+                        
+                        if len(nums) >= 2:
+                            amount_paid = nums[0]
+                            tds_deducted = nums[1]
+                            
+                            src_clean = current_tds_source
+                            if "(" in src_clean:
+                                src_clean = src_clean.split("(")[0].strip()
+                                
+                            if current_tds_cat == "194a":
+                                # Distinguish EPFO from regular deposits
+                                if "bommasanora" in src_clean.lower() or "epf" in src_clean.lower() or "provident" in src_clean.lower():
+                                    pass
+                                else:
+                                    tds_on_deposit_interest += tds_deducted
+                                    tds_on_deposit_interest_details.append({
+                                        "source": src_clean,
+                                        "amount": amount_paid,
+                                        "tds": tds_deducted
+                                    })
+                                    
+        data["tds_on_deposit_interest"] = tds_on_deposit_interest
+        data["tds_on_deposit_interest_details"] = tds_on_deposit_interest_details
+
         return data
 
     def _parse_float_val(self, val_str: str) -> float:
@@ -625,7 +704,9 @@ AIS/TIS text:
             "advance_tax_details": [],
             "tax_refund_amount": 0.0,
             "tax_refund_interest": 0.0,
-            "tax_due_demand": 0.0
+            "tax_due_demand": 0.0,
+            "tds_on_deposit_interest": 0.0,
+            "tds_on_deposit_interest_details": []
         }
         
         for content in csv_contents:
@@ -670,6 +751,7 @@ AIS/TIS text:
         is_salary = False
         is_refund_demand = False
         is_epfo = False
+        is_tds_194a = False
         
         cat_col = col_map.get("information category") or col_map.get("information description")
         desc_col = col_map.get("information description")
@@ -707,6 +789,15 @@ AIS/TIS text:
                         is_fd = True
                 else:
                     is_savings = True
+            elif ("tds deducted" in col_map or "tds deposited" in col_map):
+                is_194a = False
+                if desc_col is not None and len(data_rows) > 0:
+                    for row in data_rows:
+                        if len(row) > desc_col and "194a" in row[desc_col].lower():
+                            is_194a = True
+                            break
+                if is_194a:
+                    is_tds_194a = True
             
         for row in data_rows:
             if not row or len(row) <= max(col_map.values(), default=-1):
@@ -739,6 +830,25 @@ AIS/TIS text:
                 src = row[col_map["information source"]] if "information source" in col_map else ""
                 acc = row[col_map["account number"]] if "account number" in col_map else ""
                 summary["taxable_epf_interest_details"].append({"source": src, "account": acc, "amount": val, "tds": tds_val})
+            elif is_tds_194a:
+                amt_col = col_map.get("amount paid/credited") or col_map.get("amount paid/credited - reported by source") or col_map.get("amount")
+                val = 0.0
+                if amt_col is not None and len(row) > amt_col:
+                    val = self._parse_float_val(row[amt_col])
+                tds_col = col_map.get("tds deducted") or col_map.get("tds deposited")
+                tds_val = 0.0
+                if tds_col is not None and len(row) > tds_col:
+                    tds_val = self._parse_float_val(row[tds_col])
+                    summary["tds_on_deposit_interest"] += tds_val
+                
+                src = row[col_map["information source"]] if "information source" in col_map and len(row) > col_map["information source"] else ""
+                acc = row[col_map["account number"]] if "account number" in col_map and len(row) > col_map["account number"] else ""
+                summary["tds_on_deposit_interest_details"].append({
+                    "source": src,
+                    "account": acc,
+                    "amount": val,
+                    "tds": tds_val
+                })
             elif is_dividend:
                 val = self._parse_float_val(row[col_map["dividend amount - reported by source"]])
                 summary["domestic_dividends"] += val
