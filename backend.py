@@ -228,7 +228,7 @@ def process_tax():
                         except Exception:
                             txn_date = date(int(parsed["tax_year"]), 12, 31)
                     else:
-                        txn_date = date(int(parsed["tax_year"]), 11, 30)
+                        txn_date = date(int(parsed["tax_year"]), 12, 31)
 
                     rate = rate_resolver.resolve_rule_115_rate(txn_date)
                     gross_usd = float(parsed["gross_income_usd"])
@@ -260,39 +260,46 @@ def process_tax():
     parsed_data["us_dividends_csv"] = csv_divs
     parsed_data["us_dividends_1042s"] = us_dividends_1042s
     
-    # Reconciliation logic: Form 1042-S is the absolute source of truth when uploaded
-    if us_dividends_1042s:
-        total_csv_usd = sum(r["amount_usd"] for r in csv_divs)
-        total_1042s_usd = sum(r["amount_usd"] for r in us_dividends_1042s)
-        # Check if they match within $15.00 tolerance (just for reference flag)
-        parsed_data["us_dividends_match"] = csv_divs and abs(total_csv_usd - total_1042s_usd) < 15.0
+    # Reconciliation logic: The detailed CSV statement is the source of truth when uploaded.
+    # We compare it against Form 1042-S with a $15.00 tolerance check.
+    total_csv_usd = sum(r["amount_usd"] for r in csv_divs)
+    total_1042s_usd = sum(r["amount_usd"] for r in us_dividends_1042s)
+    
+    # Pre-calculate December 31st reconciled 1042s for fallback use and fallback table display
+    reconciled_1042s = []
+    for r in us_dividends_1042s:
+        tax_year = r.get("tax_year", 2025)
+        dec_31 = date(int(tax_year), 12, 31)
+        rate_dec_31 = rate_resolver.resolve_rule_115_rate(dec_31)
         
-        # Converted u/s Rule 115 using December 31st preceding month end rate (November 30th)
-        reconciled_1042s = []
-        for r in us_dividends_1042s:
-            tax_year = r.get("tax_year", 2025)
-            dec_31 = date(int(tax_year), 12, 31)
-            rate_dec_31 = rate_resolver.resolve_rule_115_rate(dec_31)
-            
-            gross_usd = r["amount_usd"]
-            withholding_usd = r["withholding_usd"]
-            
-            reconciled_1042s.append({
-                "source": r["source"],
-                "date": dec_31.isoformat() if hasattr(dec_31, "isoformat") else dec_31,
-                "amount_usd": gross_usd,
-                "amount_inr": gross_usd * rate_dec_31,
-                "withholding_usd": withholding_usd,
-                "withholding_inr": withholding_usd * rate_dec_31,
-                "rate_used": rate_dec_31,
-                "is_reconciled_fallback": True
-            })
-        parsed_data["us_dividends"] = reconciled_1042s
-        parsed_data["us_dividends_1042s"] = reconciled_1042s
-    else:
-        # No 1042-S files uploaded: fallback to CSV statement
-        parsed_data["us_dividends_match"] = True
+        gross_usd = r["amount_usd"]
+        withholding_usd = r["withholding_usd"]
+        
+        reconciled_1042s.append({
+            "source": r["source"],
+            "date": dec_31.isoformat() if hasattr(dec_31, "isoformat") else dec_31,
+            "amount_usd": gross_usd,
+            "amount_inr": gross_usd * rate_dec_31,
+            "withholding_usd": withholding_usd,
+            "withholding_inr": withholding_usd * rate_dec_31,
+            "rate_used": rate_dec_31,
+            "is_reconciled_fallback": True
+        })
+        
+    if csv_divs:
         parsed_data["us_dividends"] = csv_divs
+        if us_dividends_1042s:
+            # Check if they match within $15.00 tolerance
+            parsed_data["us_dividends_match"] = abs(total_csv_usd - total_1042s_usd) <= 15.0
+        else:
+            parsed_data["us_dividends_match"] = True
+    else:
+        # Fallback to December 31st reconciled 1042-S if no CSV statement uploaded
+        parsed_data["us_dividends"] = reconciled_1042s
+        parsed_data["us_dividends_match"] = True
+        
+    # Save the reconciled 1042s in parsed_raw for the official 1042s table display
+    parsed_data["us_dividends_1042s"] = reconciled_1042s
 
     # 5. Parse VDA/Crypto CSV and JSON manual entry
     vda_trades_file = request.files.get("vda_trades_csv")
