@@ -25,7 +25,7 @@ SBI_PDF_URLS = [
     "https://bank.sbi/documents/16012/1400784/FOREX_CARD_RATES.pdf"
 ]
 
-LOCAL_DIR = "/Users/Karthik/Documents/Projects/personal_tax_filing/csv_files"
+LOCAL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "csv_files")
 COMMUNITY_BASE_URL = "https://raw.githubusercontent.com/sahilgupta/sbi-fx-ratekeeper/main/csv_files/"
 
 def download_sbi_pdf():
