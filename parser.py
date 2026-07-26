@@ -573,17 +573,17 @@ AIS/TIS text:
                         data["tax_refund_amount"] += ref_val
                         
                         pmt_date = datetime.strptime(date_str, "%d/%m/%Y").date()
-                        fy_start_year = int(fy_str.split("-")[0])
-                        ay_start_year = fy_start_year + 1
-                        ay_start_date = date(ay_start_year, 4, 1)
-                        
-                        if pmt_date > ay_start_date:
-                            months = (pmt_date.year - ay_start_date.year) * 12 + pmt_date.month - ay_start_date.month
-                            if pmt_date.day >= 1:
-                                months += 1
-                            months = max(0, months)
-                            interest_est = ref_val * 0.005 * months
-                            data["tax_refund_interest"] += interest_est
+                        # We do not estimate interest u/s 244A on refunds in the absence of explicit AIS interest entry
+                        # fy_start_year = int(fy_str.split("-")[0])
+                        # ay_start_year = fy_start_year + 1
+                        # ay_start_date = date(ay_start_year, 4, 1)
+                        # if pmt_date > ay_start_date:
+                        #     months = (pmt_date.year - ay_start_date.year) * 12 + pmt_date.month - ay_start_date.month
+                        #     if pmt_date.day >= 1:
+                        #         months += 1
+                        #     months = max(0, months)
+                        #     interest_est = ref_val * 0.005 * months
+                        #     data["tax_refund_interest"] += interest_est
                     except Exception as ex:
                         logger.warning(f"Error parsing refund u/s 244A in PDF regex fallback: {ex}")
             
@@ -771,14 +771,16 @@ AIS/TIS text:
                                     if fy_match:
                                         ay_start_year = int(fy_match.group(1)) + 1
                                         
-                                ay_start_date = date(ay_start_year, 4, 1)
-                                if pmt_date > ay_start_date:
-                                    months = (pmt_date.year - ay_start_date.year) * 12 + pmt_date.month - ay_start_date.month
-                                    if pmt_date.day >= 1:
-                                        months += 1
-                                    months = max(0, months)
-                                    interest_est = ref_val * 0.005 * months
-                                    summary["tax_refund_interest"] += interest_est
+                                # We do not estimate interest u/s 244A on refunds in the absence of explicit AIS interest entry
+                                # ay_start_date = date(ay_start_year, 4, 1)
+                                # if pmt_date > ay_start_date:
+                                #     months = (pmt_date.year - ay_start_date.year) * 12 + pmt_date.month - ay_start_date.month
+                                #     if pmt_date.day >= 1:
+                                #         months += 1
+                                #     months = max(0, months)
+                                #     interest_est = ref_val * 0.005 * months
+                                #     summary["tax_refund_interest"] += interest_est
+                                pass
                             except Exception as ex:
                                 logger.warning(f"Error estimating refund interest in CSV: {ex}")
                                 
