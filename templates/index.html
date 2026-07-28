@@ -925,6 +925,10 @@
                     <input type="file" id="file_indian_stock" class="form-control-file" accept=".csv,.xlsx,.xls">
                 </div>
                 <div class="form-group">
+                    <label for="file_mutual_funds">Mutual Funds Statement (PDF/Excel)</label>
+                    <input type="file" id="file_mutual_funds" class="form-control-file" accept=".pdf,.xlsx,.xls,.csv">
+                </div>
+                <div class="form-group">
                     <label for="file_us_stock">US Stock Sales CSV</label>
                     <input type="file" id="file_us_stock" class="form-control-file" accept=".csv">
                 </div>
@@ -1378,6 +1382,52 @@
                                     <span class="row-val" id="cg-copy-stcg-unlisted">₹0</span>
                                     <button class="btn-copy" onclick="copyVal('cg-copy-stcg-unlisted')">Copy</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mutual Fund Summary Section -->
+                    <div id="mutual-fund-summary-container" style="display:none; margin-bottom: 2rem;">
+                        <div class="tax-table-card">
+                            <div class="table-header-bar">
+                                <span class="table-header-title">Mutual Funds Capital Gains Summary</span>
+                            </div>
+                            <div class="grid-3" style="padding: 1.5rem 1.5rem 0.5rem 1.5rem;">
+                                <div class="metric-mini-card" style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2);">
+                                    <div class="mini-card-label" style="color: #93c5fd;">Equity Mutual Funds (Sec 112A/111A)</div>
+                                    <div class="mini-card-val" id="mf-equity-gain" style="color: #3b82f6;">₹0</div>
+                                </div>
+                                <div class="metric-mini-card" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2);">
+                                    <div class="mini-card-label" style="color: #fcd34d;">Specified Mutual Funds (Sec 50AA)</div>
+                                    <div class="mini-card-val" id="mf-specified-gain" style="color: #f59e0b;">₹0</div>
+                                </div>
+                                <div class="metric-mini-card" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">
+                                    <div class="mini-card-label" style="color: #6ee7b7;">Other Hybrid Mutual Funds (Sec 112/Slab)</div>
+                                    <div class="mini-card-val" id="mf-other-gain" style="color: #10b981;">₹0</div>
+                                </div>
+                            </div>
+                            
+                            <div class="data-table-container" style="padding: 0 1.5rem 1.5rem 1.5rem;">
+                                <div style="font-size:0.75rem; font-weight:600; color:var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Mutual Fund lot ledger</div>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Scheme Name / ISIN</th>
+                                            <th>Category</th>
+                                            <th>Units</th>
+                                            <th>Buy Details</th>
+                                            <th>Sell Details</th>
+                                            <th>Holding Days</th>
+                                            <th>Total Cost</th>
+                                            <th>Total Proceeds</th>
+                                            <th>Realized Gain/Loss</th>
+                                            <th>Section / Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mf-table-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -3199,6 +3249,9 @@
             const indStock = document.getElementById("file_indian_stock").files[0];
             if (indStock) formData.append("indian_stock", indStock);
 
+            const mutualFunds = document.getElementById("file_mutual_funds").files[0];
+            if (mutualFunds) formData.append("mutual_funds", mutualFunds);
+
             const usStock = document.getElementById("file_us_stock").files[0];
             if (usStock) formData.append("us_stock", usStock);
 
@@ -3349,6 +3402,10 @@
                 <div class="file-status-item">
                     <span class="file-name">Indian Stock CSV</span>
                     <span class="status-badge ${hasFiles.indian_stock ? 'status-found' : 'status-missing'}">${hasFiles.indian_stock ? 'Uploaded' : 'Missing'}</span>
+                </div>
+                <div class="file-status-item">
+                    <span class="file-name">Mutual Funds PDF</span>
+                    <span class="status-badge ${hasFiles.mutual_funds ? 'status-found' : 'status-missing'}">${hasFiles.mutual_funds ? 'Uploaded' : 'Missing'}</span>
                 </div>
                 <div class="file-status-item">
                     <span class="file-name">US Stock CSV</span>
@@ -3612,11 +3669,12 @@
                 unlistedLabel.style.display = "none";
             }
 
-            // Transactions Table
+            // Filter and populate Stock Transactions Table
             const txBody = document.getElementById("transactions-table-body");
             txBody.innerHTML = "";
-            if (cg.transactions && cg.transactions.length > 0) {
-                cg.transactions.forEach(t => {
+            const stockTxs = (cg.transactions || []).filter(t => !t.asset_type || t.asset_type === "stock");
+            if (stockTxs.length > 0) {
+                stockTxs.forEach(t => {
                     const charges = t.transfer_expenses || 0;
                     txBody.innerHTML += `
                         <tr>
@@ -3636,7 +3694,57 @@
                     `;
                 });
             } else {
-                txBody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 1.5rem; color:var(--text-secondary);">No stock transactions processed.</td></tr>`;
+                txBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 1.5rem; color:var(--text-secondary);">No stock transactions processed.</td></tr>`;
+            }
+
+            // Filter and populate Mutual Funds Summary & Table
+            const mfTxs = (cg.transactions || []).filter(t => ["equity_mf", "specified_mf", "other_mf"].includes(t.asset_type));
+            const mfContainer = document.getElementById("mutual-fund-summary-container");
+            const mfBody = document.getElementById("mf-table-body");
+            
+            if (mfTxs.length > 0) {
+                mfContainer.style.display = "block";
+                mfBody.innerHTML = "";
+                
+                let equityGain = 0;
+                let specifiedGain = 0;
+                let otherGain = 0;
+                
+                mfTxs.forEach(t => {
+                    const gain = t.gain_inr || 0.0;
+                    if (t.asset_type === "equity_mf") {
+                        equityGain += gain;
+                    } else if (t.asset_type === "specified_mf") {
+                        specifiedGain += gain;
+                    } else if (t.asset_type === "other_mf") {
+                        otherGain += gain;
+                    }
+                    
+                    let catLabel = "Other Hybrid";
+                    if (t.asset_type === "equity_mf") catLabel = "Equity Oriented";
+                    else if (t.asset_type === "specified_mf") catLabel = "Specified (Sec 50AA)";
+                    
+                    mfBody.innerHTML += `
+                        <tr>
+                            <td style="font-weight:600; color:#fff;">${t.symbol}</td>
+                            <td><span style="font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05); color:#cbd5e1;">${catLabel}</span></td>
+                            <td>${t.quantity.toFixed(3)}</td>
+                            <td>${t.buy_date} (${formatINR(t.buy_val_inr / t.quantity)})</td>
+                            <td>${t.sell_date} (${formatINR(t.sell_val_inr / t.quantity)})</td>
+                            <td>${t.holding_days}</td>
+                            <td style="font-family:monospace;">${formatINR(t.buy_val_inr)}</td>
+                            <td style="font-family:monospace;">${formatINR(t.sell_val_inr)}</td>
+                            <td style="font-family:monospace; font-weight:700; color:${gain >= 0 ? '#34d399' : '#f87171'}">${gain >= 0 ? '+' : ''}${formatINR(gain)}</td>
+                            <td><strong>${t.section}</strong> / ${t.rate}</td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById("mf-equity-gain").innerText = (equityGain >= 0 ? "+" : "") + formatINR(equityGain);
+                document.getElementById("mf-specified-gain").innerText = (specifiedGain >= 0 ? "+" : "") + formatINR(specifiedGain);
+                document.getElementById("mf-other-gain").innerText = (otherGain >= 0 ? "+" : "") + formatINR(otherGain);
+            } else {
+                mfContainer.style.display = "none";
             }
 
             // Schedule OS

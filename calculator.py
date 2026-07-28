@@ -46,46 +46,84 @@ class TaxCalculator:
             buy_price_inr = tx["buy_price_inr"]
             sell_price_inr = tx["sell_price_inr"]
             is_us = tx["is_us"]
-            
+            asset_type = tx.get("asset_type", "stock")
+
+            if isinstance(buy_date, str):
+                buy_date = datetime.strptime(buy_date[:10], "%Y-%m-%d").date()
+            if isinstance(sell_date, str):
+                sell_date = datetime.strptime(sell_date[:10], "%Y-%m-%d").date()
+
+            # Apply Section 112A Grandfathering for equity_mf and Indian stocks
+            if (asset_type in ["equity_mf", "stock"]) and not is_us:
+                if buy_date <= date(2018, 1, 31):
+                    fmv = tx.get("fmv_31_jan_2018", 0.0)
+                    if fmv > 0:
+                        buy_price_inr = max(buy_price_inr, min(fmv, sell_price_inr))
+
             holding_days = (sell_date - buy_date).days
             gain_inr = (sell_price_inr - buy_price_inr) * qty
             
-            # Determine term
-            if is_us:
-                # Unlisted shares holding period for long term is 24 months (approx 730 days)
-                is_long_term = holding_days > 730
-            else:
-                # Listed shares holding period for long term is 12 months (approx 365 days)
-                is_long_term = holding_days > 365
-
-            # Determine rate based on FY and sell date
+            # Determine term & rate based on asset_type
+            is_long_term = False
             rate = 0.0
             section = ""
             
             if is_us:
+                is_long_term = holding_days > 730
                 if is_long_term:
                     section = "Sec 112"
-                    # For LTCG US:
                     if self.fy == "2024-25" and sell_date < date(2024, 7, 23):
-                        rate = 20.0  # with indexation (simplified to 20% in summary)
-                    else:
-                        rate = 12.5  # without indexation
-                else:
-                    section = "Slab Rate"
-                    rate = -1.0  # Taxed at slab rates
-            else:
-                if is_long_term:
-                    section = "Sec 112A"
-                    if self.fy == "2024-25" and sell_date < date(2024, 7, 23):
-                        rate = 10.0
+                        rate = 20.0
                     else:
                         rate = 12.5
                 else:
-                    section = "Sec 111A"
-                    if self.fy == "2024-25" and sell_date < date(2024, 7, 23):
-                        rate = 15.0
+                    section = "Slab Rate"
+                    rate = -1.0
+            else:
+                if asset_type in ["equity_mf", "stock"]:
+                    is_long_term = holding_days > 365
+                    if is_long_term:
+                        section = "Sec 112A"
+                        if self.fy == "2024-25" and sell_date < date(2024, 7, 23):
+                            rate = 10.0
+                        else:
+                            rate = 12.5
                     else:
-                        rate = 20.0
+                        section = "Sec 111A"
+                        if self.fy == "2024-25" and sell_date < date(2024, 7, 23):
+                            rate = 15.0
+                        else:
+                            rate = 20.0
+                            
+                elif asset_type == "specified_mf":
+                    if buy_date >= date(2023, 4, 1):
+                        is_long_term = False
+                        section = "Sec 50AA"
+                        rate = -1.0
+                    else:
+                        is_long_term = holding_days > 1095
+                        if is_long_term:
+                            section = "Sec 112"
+                            if self.fy == "2024-25" and sell_date < date(2024, 7, 23):
+                                rate = 20.0
+                            else:
+                                rate = 12.5
+                        else:
+                            section = "Slab Rate"
+                            rate = -1.0
+                            
+                elif asset_type == "other_mf":
+                    threshold = 730 if sell_date >= date(2024, 7, 23) else 1095
+                    is_long_term = holding_days > threshold
+                    if is_long_term:
+                        section = "Sec 112"
+                        if self.fy == "2024-25" and sell_date < date(2024, 7, 23):
+                            rate = 20.0
+                        else:
+                            rate = 12.5
+                    else:
+                        section = "Slab Rate"
+                        rate = -1.0
 
             tx_info = {
                 "symbol": tx["symbol"],
@@ -99,6 +137,7 @@ class TaxCalculator:
                 "gain_inr": gain_inr,
                 "type": "LTCG" if is_long_term else "STCG",
                 "is_us": is_us,
+                "asset_type": asset_type,
                 "section": section,
                 "rate": rate if rate != -1.0 else "Slab"
             }
@@ -117,16 +156,28 @@ class TaxCalculator:
                     else:
                         stcg_unlisted_losses += abs(gain_inr)
             else:
-                if is_long_term:
-                    if gain_inr >= 0:
-                        ltcg_listed_gains += gain_inr
+                if asset_type in ["equity_mf", "stock"]:
+                    if is_long_term:
+                        if gain_inr >= 0:
+                            ltcg_listed_gains += gain_inr
+                        else:
+                            ltcg_listed_losses += abs(gain_inr)
                     else:
-                        ltcg_listed_losses += abs(gain_inr)
+                        if gain_inr >= 0:
+                            stcg_listed_gains += gain_inr
+                        else:
+                            stcg_listed_losses += abs(gain_inr)
                 else:
-                    if gain_inr >= 0:
-                        stcg_listed_gains += gain_inr
+                    if is_long_term:
+                        if gain_inr >= 0:
+                            ltcg_unlisted_gains += gain_inr
+                        else:
+                            ltcg_unlisted_losses += abs(gain_inr)
                     else:
-                        stcg_listed_losses += abs(gain_inr)
+                        if gain_inr >= 0:
+                            stcg_unlisted_gains += gain_inr
+                        else:
+                            stcg_unlisted_losses += abs(gain_inr)
 
         # Set-off logic implementation
         # Step 1: Set off LTCG losses against LTCG gains

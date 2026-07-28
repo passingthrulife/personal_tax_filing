@@ -65,6 +65,7 @@ def process_tax():
     ais_tis_file = request.files.get("ais_tis")
     indian_stock_file = request.files.get("indian_stock")
     us_stock_file = request.files.get("us_stock")
+    mutual_funds_file = request.files.get("mutual_funds")
     us_dividends_file = request.files.get("us_dividends_csv")
     us_1042s_files = request.files.getlist("us_1042s")
 
@@ -188,6 +189,17 @@ def process_tax():
         except Exception as e:
             logger.error(f"Error parsing Indian stock sales: {e}")
             warnings.append(f"Error parsing Indian Stock Sales: {e}")
+
+    # 3.2 Parse Mutual Funds Statement
+    if mutual_funds_file and mutual_funds_file.filename:
+        try:
+            mf_bytes = mutual_funds_file.read()
+            records = doc_parser.parse_mutual_funds_pdf(mf_bytes)
+            parsed_data["stock_sales"].extend(records)
+            logger.info(f"Parsed {len(records)} Mutual Fund transaction lots.")
+        except Exception as e:
+            logger.error(f"Error parsing Mutual Funds: {e}")
+            warnings.append(f"Error parsing Mutual Funds: {e}")
 
     if us_stock_file and us_stock_file.filename:
         try:
@@ -450,6 +462,7 @@ def process_tax():
         has_ais = ais_tis_file is not None and ais_tis_file.filename != ""
         has_ind = indian_stock_file is not None and indian_stock_file.filename != ""
         has_us = us_stock_file is not None and us_stock_file.filename != ""
+        has_mf = mutual_funds_file is not None and mutual_funds_file.filename != ""
         has_1042s = len(us_1042s_files) > 0 and any(f.filename != "" for f in us_1042s_files)
 
         response_data = {
@@ -463,6 +476,7 @@ def process_tax():
                 "ais_tis": has_ais,
                 "indian_stock": has_ind,
                 "us_stock": has_us,
+                "mutual_funds": has_mf,
                 "us_1042s": has_1042s
             }
         }
