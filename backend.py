@@ -277,7 +277,7 @@ def process_tax():
     parsed_data["us_dividends_1042s"] = us_dividends_1042s
     
     # Reconciliation logic: The detailed CSV statement is the source of truth when uploaded.
-    # We compare it against Form 1042-S with a $15.00 tolerance check.
+    # We compare it against Form 1042-S with a $5.00 tolerance check.
     total_csv_usd = sum(r["amount_usd"] for r in csv_divs)
     total_1042s_usd = sum(r["amount_usd"] for r in us_dividends_1042s)
     
@@ -305,8 +305,8 @@ def process_tax():
     if csv_divs:
         parsed_data["us_dividends"] = csv_divs
         if us_dividends_1042s:
-            # Check if they match within $15.00 tolerance
-            parsed_data["us_dividends_match"] = abs(total_csv_usd - total_1042s_usd) <= 15.0
+            # Check if they match within $5.00 tolerance
+            parsed_data["us_dividends_match"] = abs(total_csv_usd - total_1042s_usd) <= 5.0
         else:
             parsed_data["us_dividends_match"] = True
     else:
