@@ -921,8 +921,8 @@
                     <input type="file" id="file_ais_tis" class="form-control-file" accept=".csv,.pdf" multiple>
                 </div>
                 <div class="form-group">
-                    <label for="file_indian_stock">Indian Stock Sales CSV</label>
-                    <input type="file" id="file_indian_stock" class="form-control-file" accept=".csv">
+                    <label for="file_indian_stock">Indian Stock Sales (CSV/Excel)</label>
+                    <input type="file" id="file_indian_stock" class="form-control-file" accept=".csv,.xlsx,.xls">
                 </div>
                 <div class="form-group">
                     <label for="file_us_stock">US Stock Sales CSV</label>
@@ -1426,6 +1426,7 @@
                                         <th>Sell Date</th>
                                         <th>Hold (Days)</th>
                                         <th>Buy Value (INR)</th>
+                                        <th>Charges (INR)</th>
                                         <th>Sell Value (INR)</th>
                                         <th>Net Gain/Loss (INR)</th>
                                         <th>Section</th>
@@ -2606,6 +2607,7 @@
                                 <th>Sell Date</th>
                                 <th class="text-right">Qty</th>
                                 <th class="text-right">Buy Val (INR)</th>
+                                <th class="text-right">Charges (INR)</th>
                                 <th class="text-right">Sell Val (INR)</th>
                                 <th class="text-right">Gain/Loss (INR)</th>
                                 <th>Section</th>
@@ -2616,6 +2618,7 @@
                 `;
                 stockSales.forEach(t => {
                     const gainColor = t.gain_inr >= 0 ? "success-val" : "danger-val";
+                    const charges = t.transfer_expenses || 0;
                     cgStockHtml += `
                         <tr>
                             <td><strong>${t.symbol || 'Stock'}</strong></td>
@@ -2623,6 +2626,7 @@
                             <td>${t.sell_date}</td>
                             <td class="text-right">${t.quantity || 0}</td>
                             <td class="text-right font-mono">${formatINR(t.buy_val_inr)}</td>
+                            <td class="text-right font-mono text-muted">${charges > 0 ? formatINR(charges) : '₹0'}</td>
                             <td class="text-right font-mono">${formatINR(t.sell_val_inr)}</td>
                             <td class="text-right font-mono ${gainColor}">${t.gain_inr >= 0 ? '+' : ''}${formatINR(t.gain_inr)}</td>
                             <td>${t.section}</td>
@@ -3613,6 +3617,7 @@
             txBody.innerHTML = "";
             if (cg.transactions && cg.transactions.length > 0) {
                 cg.transactions.forEach(t => {
+                    const charges = t.transfer_expenses || 0;
                     txBody.innerHTML += `
                         <tr>
                             <td style="font-weight:600; color:#fff;">${t.symbol}</td>
@@ -3622,6 +3627,7 @@
                             <td>${t.sell_date}</td>
                             <td>${t.holding_days}</td>
                             <td style="font-family:monospace;">${formatINR(t.buy_val_inr)}</td>
+                            <td style="font-family:monospace; color:var(--text-secondary);">${charges > 0 ? formatINR(charges) : '₹0'}</td>
                             <td style="font-family:monospace;">${formatINR(t.sell_val_inr)}</td>
                             <td style="font-family:monospace; font-weight:700; color:${t.gain_inr >= 0 ? '#34d399' : '#f87171'}">${t.gain_inr >= 0 ? '+' : ''}${formatINR(t.gain_inr)}</td>
                             <td>${t.section}</td>

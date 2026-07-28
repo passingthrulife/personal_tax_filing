@@ -95,6 +95,7 @@ class TaxCalculator:
                 "holding_days": holding_days,
                 "buy_val_inr": buy_price_inr * qty,
                 "sell_val_inr": sell_price_inr * qty,
+                "transfer_expenses": tx.get("transfer_expenses", 0.0),
                 "gain_inr": gain_inr,
                 "type": "LTCG" if is_long_term else "STCG",
                 "is_us": is_us,
