@@ -5,7 +5,7 @@ import json
 import io
 import logging
 from datetime import datetime, date
-import PyPDF2
+import pypdf
 import pdfplumber
 import anthropic
 from rate_resolver import RateResolver
@@ -32,7 +32,7 @@ class DocumentParser:
         """Decrypts a PDF file if encrypted and returns decrypted bytes."""
         input_pdf = io.BytesIO(file_bytes)
         try:
-            reader = PyPDF2.PdfReader(input_pdf, strict=False)
+            reader = pypdf.PdfReader(input_pdf, strict=False)
             if not reader.is_encrypted:
                 return file_bytes
 
@@ -55,7 +55,7 @@ class DocumentParser:
 
             # Write decrypted PDF to bytes
             output = io.BytesIO()
-            writer = PyPDF2.PdfWriter()
+            writer = pypdf.PdfWriter()
             for page in reader.pages:
                 writer.add_page(page)
             writer.write(output)
@@ -67,7 +67,7 @@ class DocumentParser:
     def extract_text_from_pdf(self, pdf_bytes: bytes) -> str:
         """Extracts text content from a PDF file."""
         try:
-            reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes), strict=False)
+            reader = pypdf.PdfReader(io.BytesIO(pdf_bytes), strict=False)
             text_parts = []
             for page_num, page in enumerate(reader.pages):
                 page_text = page.extract_text()
@@ -971,10 +971,10 @@ AIS/TIS text:
                 
         if pdf_resolved_path:
             try:
-                import PyPDF2
+                import pypdf
                 logger.info(f"HDFC Securities Excel parser: found local sibling PDF at {pdf_resolved_path}. Extracting transaction dates...")
                 with open(pdf_resolved_path, "rb") as pdf_file:
-                    reader = PyPDF2.PdfReader(pdf_file)
+                    reader = pypdf.PdfReader(pdf_file)
                     # Extract from page 4 (index 3) where details are located
                     if len(reader.pages) >= 4:
                         text = reader.pages[3].extract_text() or ""
@@ -1070,9 +1070,9 @@ AIS/TIS text:
         import re
         from datetime import datetime, date
         import copy
-        import PyPDF2
+        import pypdf
 
-        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
         
         all_text = ""
         for page in reader.pages:
@@ -1114,12 +1114,18 @@ AIS/TIS text:
                 match_date = re.match(r'^(\d{2}/\d{2}/\d{4})', line_strip)
                 if match_date:
                     tx_date = datetime.strptime(match_date.group(1), "%d/%m/%Y").date()
-                    next_line = lines[idx+1].strip()
-                    match_units = re.search(r'\((?:\d+/\d+)\)?\s*([\d,]+\.\d+)', next_line)
-                    if not match_units:
-                        match_units = re.search(r'([\d,]+\.\d+)', next_line)
-                    if match_units:
-                        units = float(match_units.group(1).replace(",", ""))
+                    units = None
+                    for offset in range(1, 4):
+                        if idx + offset >= len(lines):
+                            break
+                        sub_line = lines[idx+offset].strip()
+                        match_units = re.search(r'\((?:\d+/\d+)\)?\s*([\d,]+\.\d+)', sub_line)
+                        if not match_units:
+                            match_units = re.search(r'([\d,]+\.\d+)', sub_line)
+                        if match_units:
+                            units = float(match_units.group(1).replace(",", ""))
+                            break
+                    if units is not None:
                         purchases.append({
                             "symbol": current_scheme,
                             "isin": current_isin,
@@ -1135,11 +1141,11 @@ AIS/TIS text:
                 match_date = re.match(r'^(\d{2}/\d{2}/\d{4})', line_strip)
                 if match_date:
                     tx_date = datetime.strptime(match_date.group(1), "%d/%m/%Y").date()
-                    for offset in range(1, 5):
+                    for offset in range(1, 6):
                         if idx + offset >= len(lines):
                             break
                         sub_line = lines[idx+offset].strip()
-                        match_details = re.search(r'\((?:\d+/\d+)\)?\s*([\d,]+\.\d+)\s+([\d,]+\.\d+)\s+([\d,]+\.\d+)', sub_line)
+                        match_details = re.search(r'(?:\((?:\d+/\d+)\)?\s*)?([\d,]+\.\d+)\s+([\d,]+\.\d+)\s+([\d,]+\.\d+)', sub_line)
                         if match_details:
                             net_amt = float(match_details.group(1).replace(",", ""))
                             nav = float(match_details.group(2).replace(",", ""))
@@ -1541,7 +1547,8 @@ AIS/TIS text:
                             except ValueError:
                                 continue
                         try:
-                            return parser.parse(d_str).date()
+                            from dateutil import parser as date_parser
+                            return date_parser.parse(d_str).date()
                         except Exception:
                             raise ValueError(f"Unable to parse date string: {d_str}")
                             
@@ -1593,7 +1600,8 @@ AIS/TIS text:
                                 return datetime.strptime(d_str, fmt).date()
                             except ValueError:
                                 continue
-                        return parser.parse(d_str).date()
+                        from dateutil import parser as date_parser
+                        return date_parser.parse(d_str).date()
                         
                     div_date = parse_date(date_str)
                     amount_usd = float(re.sub(r"[^\d\.\-]", "", row[amt_idx]))
@@ -1896,7 +1904,8 @@ AIS/TIS text:
                         except ValueError:
                             continue
                     try:
-                        return parser.parse(d_str).date()
+                        from dateutil import parser as date_parser
+                        return date_parser.parse(d_str).date()
                     except Exception:
                         raise ValueError(f"Unable to parse VDA date: {d_str}")
                         
@@ -1976,9 +1985,9 @@ AIS/TIS text:
         import io
         import json
         from datetime import datetime
-        import PyPDF2
+        import pypdf
         
-        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
         all_text = ""
         for page in reader.pages[:10]:
             all_text += page.extract_text() or ""
@@ -2065,9 +2074,9 @@ JSON Output:
         import io
         import json
         from datetime import datetime
-        import PyPDF2
+        import pypdf
         
-        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
         all_text = ""
         for page in reader.pages[:10]:
             all_text += page.extract_text() or ""

@@ -500,6 +500,7 @@ class TaxCalculator:
         surcharge_regular = self.calculate_surcharge(is_new_regime, regular_slab_income, 0.0, 0.0, slab_tax_regular, slab_tax_regular, 0.0)
         cess_regular = (slab_tax_regular + surcharge_regular) * 0.04
         tax_regular = slab_tax_regular + surcharge_regular + cess_regular
+        assessed_tax_regular = max(0.0, tax_regular - tds_credited)
         
         # Resolve rates for special CG tax
         txs_111a = [t for t in (stock_sales or []) if t.get("section") == "Sec 111A"]
