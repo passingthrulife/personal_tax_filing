@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime, date
 import logging
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template
 from rate_resolver import RateResolver
 from parser import DocumentParser
 from calculator import TaxCalculator
@@ -22,12 +22,9 @@ BASE_DIR = "/Users/Karthik/Documents/Karthik Personal/Taxes/Tax AY 2026-27"
 
 @app.route("/")
 def index():
-    # Renders the single-page HTML template from the local file
+    # Renders the single-page HTML template from the local templates folder
     try:
-        template_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
-        with open(template_path, "r", encoding="utf-8") as f:
-            template_content = f.read()
-        return render_template_string(template_content)
+        return render_template("index.html")
     except Exception as e:
         logger.error(f"Failed to load frontend template: {e}")
         return f"<h1>Error loading UI dashboard: {e}</h1>", 500
@@ -855,4 +852,4 @@ def get_forex_rates():
     })
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=False)
