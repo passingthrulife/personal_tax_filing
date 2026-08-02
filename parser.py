@@ -1237,9 +1237,9 @@ AIS/TIS text:
             has_sym = has_match(["symbol", "ticker", "share", "asset", "description", "security", "name"])
             has_qty = has_match(["quantity", "qty", "shares", "units", "quantity sold"])
             has_buy_dt = has_match(["buy date", "purchase date", "buy_date", "purchase_date", "acquired", "date acquired", "acq date", "dt_buy", "opened date", "open date", "opened_date"])
-            has_buy_val = has_match(["cost per share", "purchase price per share", "buy price per share", "price per share", "buy price", "purchase price", "cost basis", "buy_val", "cost", "total cost", "purchase value", "cost basis (cb)", "cost basis (usd)"])
+            has_buy_val = has_match(["cost per share", "purchase price per share", "buy price per share", "price per share", "buy price", "purchase price", "cost basis", "buy_val", "cost", "total cost", "purchase value", "purchase rate", "buy rate", "cost basis (cb)", "cost basis (usd)"])
             has_sell_dt = has_match(["sell date", "sale date", "sell_date", "sale_date", "sold", "date sold", "disposal date", "dt_sell", "closed date", "close date", "closed_date", "transaction closed date"])
-            has_sell_val = has_match(["proceeds per share", "sale price per share", "sell price per share", "price per share", "sell price", "sale price", "proceeds", "gross proceeds", "total proceeds", "value sold", "sales proceeds", "proceeds (usd)"])
+            has_sell_val = has_match(["proceeds per share", "sale price per share", "sell price per share", "price per share", "sell price", "sale price", "proceeds", "gross proceeds", "total proceeds", "value sold", "sales proceeds", "sale value", "sale rate", "sell rate", "proceeds (usd)"])
             
             # If we match at least 4 core columns, this is our header row
             matches_count = sum([has_sym, has_qty, has_buy_dt, has_buy_val, has_sell_dt, has_sell_val])
@@ -1263,17 +1263,17 @@ AIS/TIS text:
         def get_col_idx(names):
             for name in names:
                 for col_idx, h in enumerate(headers):
-                    if name in h:
+                    if name == h or name in h:
                         return col_idx
             return -1
 
-        sym_idx = get_col_idx(["symbol", "ticker", "share", "asset", "description", "security"])
+        sym_idx = get_col_idx(["symbol", "ticker", "share", "asset", "description", "security", "stock symbol"])
         isin_idx = get_col_idx(["isin", "code"])
         qty_idx = get_col_idx(["quantity sold", "quantity", "qty", "shares", "units"])
         buy_date_idx = get_col_idx(["date acquired", "acquired", "acq date", "opened date", "open date", "opened_date", "buy date", "purchase date", "buy_date", "purchase_date", "dt_buy"])
-        buy_price_idx = get_col_idx(["cost per share", "purchase price per share", "buy price per share", "price per share", "cost basis (cb)", "cost basis (usd)", "cost basis", "cost", "total cost", "purchase price", "buy price", "buy_price", "purchase_price", "purchase value"])
+        buy_price_idx = get_col_idx(["purchase rate", "buy rate", "cost per share", "purchase price per share", "buy price per share", "price per share", "cost basis (cb)", "cost basis (usd)", "cost basis", "cost", "total cost", "purchase price", "buy price", "buy_price", "purchase_price", "purchase value"])
         sell_date_idx = get_col_idx(["date sold", "sold", "closed date", "close date", "closed_date", "transaction closed date", "sell date", "sale date", "sell_date", "sale_date", "disposal date", "dt_sell"])
-        sell_price_idx = get_col_idx(["proceeds per share", "sale price per share", "sell price per share", "price per share", "proceeds (usd)", "proceeds", "gross proceeds", "total proceeds", "sell price", "sale price", "sell_price", "sale_price", "value sold", "sales proceeds"])
+        sell_price_idx = get_col_idx(["sale rate", "sell rate", "proceeds per share", "sale price per share", "sell price per share", "price per share", "proceeds (usd)", "proceeds", "gross proceeds", "total proceeds", "sell price", "sale price", "sell_price", "sale_price", "value sold", "sales proceeds", "sale value"])
         
         # Deductible charges columns
         brokerage_idx = get_col_idx(["brokerage", "commission", "commissions", "fee", "fees"])
@@ -1373,7 +1373,8 @@ AIS/TIS text:
                             continue
                     # Parse using dateutil as fallback
                     try:
-                        return parser.parse(d_str).date()
+                        from dateutil import parser as date_parser
+                        return date_parser.parse(d_str).date()
                     except Exception:
                         raise ValueError(f"Unable to parse date string: {d_str}")
 
@@ -1928,6 +1929,380 @@ AIS/TIS text:
                 })
             except Exception as e:
                 logger.warning(f"Failed to parse VDA row {row}: {e}")
+                continue
+                
+        return records
+
+    def parse_us_stock_excel(self, file_bytes: bytes) -> list:
+        """
+        Parses US stock sales Excel sheets by converting them to CSV string
+        and delegating to parse_stock_sales_csv.
+        """
+        import io
+        import openpyxl
+        import csv
+        wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+        sheet = wb.active
+        output = io.StringIO()
+        writer = csv.writer(output)
+        for row in sheet.iter_rows(values_only=True):
+            if any(row):
+                writer.writerow([str(v) if v is not None else "" for v in row])
+        csv_content = output.getvalue()
+        return self.parse_stock_sales_csv(csv_content, is_us=True)
+
+    def parse_us_dividends_excel(self, file_bytes: bytes) -> list:
+        """
+        Parses US dividends Excel sheets by converting them to CSV string
+        and delegating to parse_us_dividends_csv.
+        """
+        import io
+        import openpyxl
+        import csv
+        wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+        sheet = wb.active
+        output = io.StringIO()
+        writer = csv.writer(output)
+        for row in sheet.iter_rows(values_only=True):
+            if any(row):
+                writer.writerow([str(v) if v is not None else "" for v in row])
+        csv_content = output.getvalue()
+        return self.parse_us_dividends_csv(csv_content)
+
+    def parse_indian_stock_pdf(self, file_bytes: bytes) -> list:
+        """
+        Parses Indian Stock PDF statements using PyPDF2 and Claude 3.5 Haiku to extract records.
+        """
+        import io
+        import json
+        from datetime import datetime
+        import PyPDF2
+        
+        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        all_text = ""
+        for page in reader.pages[:10]:
+            all_text += page.extract_text() or ""
+            
+        if not all_text.strip():
+            return []
+            
+        prompt = f"""
+You are an expert tax parser. Extract all stock/share sale transaction lots from the following raw text of an Indian brokerage statement PDF.
+
+Analyze the transactions. Each transaction lot must resolve the corresponding purchase date/price and sell date/price.
+
+Return a JSON list of objects, where each object has exactly these fields:
+- "symbol": Name of the stock / scrip (string)
+- "isin": ISIN of the stock (string, default "")
+- "quantity": Number of shares sold (float)
+- "buy_date": Purchase date in "YYYY-MM-DD" format
+- "buy_price_inr": Purchase price per share in INR (float)
+- "sell_date": Sale date in "YYYY-MM-DD" format
+- "sell_price_inr": Sale price per share in INR (float)
+- "transfer_expenses_inr": Total non-STT charges (brokerage, GST, trans charges) in INR for this lot (float, default 0.0)
+
+Raw PDF Text:
+{all_text}
+
+JSON Output:
+"""
+        try:
+            response = self.client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=2000,
+                temperature=0.0,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            content = response.content[0].text.strip()
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            raw_records = json.loads(content)
+            
+            records = []
+            for r in raw_records:
+                try:
+                    buy_date = datetime.strptime(r["buy_date"], "%Y-%m-%d").date()
+                    sell_date = datetime.strptime(r["sell_date"], "%Y-%m-%d").date()
+                    qty = float(r["quantity"])
+                    buy_price_inr = float(r["buy_price_inr"])
+                    sell_price_inr = float(r["sell_price_inr"])
+                    expenses_inr = float(r.get("transfer_expenses_inr", 0.0))
+                    
+                    net_sell_price_inr = ((sell_price_inr * qty) - expenses_inr) / qty
+                    
+                    records.append({
+                        "symbol": r["symbol"],
+                        "isin": r.get("isin", ""),
+                        "quantity": qty,
+                        "buy_date": buy_date,
+                        "buy_price": buy_price_inr,
+                        "buy_price_inr": buy_price_inr,
+                        "sell_date": sell_date,
+                        "sell_price": sell_price_inr,
+                        "sell_price_inr": net_sell_price_inr,
+                        "rate_buy_used": 1.0,
+                        "rate_sell_used": 1.0,
+                        "transfer_expenses": expenses_inr,
+                        "is_us": False
+                    })
+                except Exception as ex:
+                    logger.warning(f"Error parsing Indian PDF lot {r}: {ex}")
+                    continue
+            return records
+        except Exception as e:
+            logger.error(f"Error parsing Indian stock PDF with Claude: {e}")
+            return []
+
+    def parse_us_stock_pdf(self, file_bytes: bytes) -> list:
+        """
+        Parses US Stock PDF statements using PyPDF2 and Claude 3.5 Haiku to extract records.
+        Converts USD values to INR on-the-fly using Rule 115 rate.
+        """
+        import io
+        import json
+        from datetime import datetime
+        import PyPDF2
+        
+        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        all_text = ""
+        for page in reader.pages[:10]:
+            all_text += page.extract_text() or ""
+            
+        if not all_text.strip():
+            return []
+            
+        prompt = f"""
+You are an expert tax parser. Extract all US stock/share sale transaction lots from the following raw text of a US brokerage statement.
+
+Analyze the transactions. Each transaction lot must resolve the corresponding purchase date/price and sell date/price.
+
+Return a JSON list of objects, where each object has exactly these fields:
+- "symbol": Ticker symbol or name of the stock (string)
+- "quantity": Number of shares sold (float)
+- "buy_date": Purchase date in "YYYY-MM-DD" format
+- "buy_price_usd": Purchase price per share in USD (float)
+- "sell_date": Sale date in "YYYY-MM-DD" format
+- "sell_price_usd": Sale price per share in USD (float)
+- "transfer_expenses_usd": Total non-STT brokerage/transaction charges in USD for this lot (float, default 0.0)
+
+Raw PDF Text:
+{all_text}
+
+JSON Output:
+"""
+        try:
+            response = self.client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=2000,
+                temperature=0.0,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            content = response.content[0].text.strip()
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            raw_records = json.loads(content)
+            
+            records = []
+            for r in raw_records:
+                try:
+                    buy_date = datetime.strptime(r["buy_date"], "%Y-%m-%d").date()
+                    sell_date = datetime.strptime(r["sell_date"], "%Y-%m-%d").date()
+                    qty = float(r["quantity"])
+                    buy_price_usd = float(r["buy_price_usd"])
+                    sell_price_usd = float(r["sell_price_usd"])
+                    expenses_usd = float(r.get("transfer_expenses_usd", 0.0))
+                    
+                    buy_rate = self.rate_resolver.resolve_rule_115_rate(buy_date)
+                    sell_rate = self.rate_resolver.resolve_rule_115_rate(sell_date)
+                    
+                    buy_price_inr = buy_price_usd * buy_rate
+                    net_sell_val_usd = (sell_price_usd * qty) - expenses_usd
+                    sell_price_inr = (net_sell_val_usd * sell_rate) / qty
+                    
+                    records.append({
+                        "symbol": r["symbol"],
+                        "isin": "",
+                        "quantity": qty,
+                        "buy_date": buy_date,
+                        "buy_price": buy_price_usd,
+                        "buy_price_inr": buy_price_inr,
+                        "sell_date": sell_date,
+                        "sell_price": sell_price_usd,
+                        "sell_price_inr": sell_price_inr,
+                        "rate_buy_used": buy_rate,
+                        "rate_sell_used": sell_rate,
+                        "transfer_expenses": expenses_usd * sell_rate,
+                        "is_us": True
+                    })
+                except Exception as ex:
+                    logger.warning(f"Error parsing US PDF lot {r}: {ex}")
+                    continue
+            return records
+        except Exception as e:
+            logger.error(f"Error parsing US stock PDF with Claude: {e}")
+            return []
+
+    def classify_mf_asset_type(self, symbol: str) -> str:
+        """
+        Classifies mutual fund category based on its name keywords.
+        """
+        sym_lower = symbol.lower()
+        if any(k in sym_lower for k in ["debt", "hybrid", "gold"]):
+            return "other_mf"
+        if any(k in sym_lower for k in ["conservative", "arbitrage", "liquid", "overnight", "money market", "specified"]):
+            return "specified_mf"
+        return "equity_mf"
+
+    def parse_zerodha_excel(self, file_bytes: bytes) -> list:
+        """
+        Parses Zerodha P&L Excel files (xlsx) from bytes.
+        Scans for sheet names starting with "Tradewise Exits" and extracts transactions.
+        Only parses Equity and Mutual Funds sections (shares/units), ignoring F&O/Currency/Commodity.
+        """
+        import io
+        import openpyxl
+        from datetime import datetime, date
+        
+        wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+        sheet = None
+        for name in wb.sheetnames:
+            if name.strip().lower().startswith("tradewise exits"):
+                sheet = wb[name]
+                break
+        if sheet is None:
+            # Fallback
+            sheet = wb.active
+            
+        records = []
+        current_segment = None
+        headers = []
+        
+        # We only care about Equity and Mutual Funds exits (sale of shares and mutual funds)
+        valid_segments = ["equity - intraday", "equity - short term", "equity - long term", "equity - buyback", "mutual funds"]
+        
+        for r_idx in range(1, sheet.max_row + 1):
+            row_vals = [sheet.cell(r_idx, c_idx).value for c_idx in range(1, sheet.max_column + 1)]
+            # Clean trailing Nones
+            while row_vals and row_vals[-1] is None:
+                row_vals.pop()
+            if not any(row_vals):
+                continue
+                
+            # Check for segment change
+            first_val = str(row_vals[1]).strip() if len(row_vals) > 1 and row_vals[1] is not None else ""
+            if first_val.lower() in valid_segments:
+                current_segment = first_val.lower()
+                headers = []
+                continue
+            elif len(row_vals) > 1 and any(s in first_val.lower() for s in ["f&o", "currency", "commodity"]):
+                current_segment = "ignored"
+                headers = []
+                continue
+                
+            if current_segment == "ignored" or current_segment is None:
+                continue
+                
+            # Check for header row
+            if "symbol" in [str(v).lower().strip() for v in row_vals]:
+                headers = [str(v).strip().lower() for v in row_vals]
+                continue
+                
+            if not headers:
+                continue
+                
+            # Parse data row
+            try:
+                def get_val(col_names):
+                    for name in col_names:
+                        for col_idx, h in enumerate(headers):
+                            if name == h or (name in h and len(name) > 3):
+                                if col_idx < len(row_vals):
+                                    return row_vals[col_idx]
+                    return None
+                    
+                symbol = get_val(["symbol"])
+                if not symbol or symbol == "Symbol":
+                    continue
+                    
+                isin = get_val(["isin"]) or ""
+                entry_date_raw = get_val(["entry date", "buy date"])
+                exit_date_raw = get_val(["exit date", "sell date"])
+                
+                if not entry_date_raw or not exit_date_raw:
+                    continue
+                    
+                def parse_date_val(d):
+                    if isinstance(d, (datetime, date)):
+                        return d if isinstance(d, date) else d.date()
+                    d_str = str(d).strip()
+                    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%Y"):
+                        try:
+                            return datetime.strptime(d_str, fmt).date()
+                        except ValueError:
+                            continue
+                    return None
+                    
+                buy_date = parse_date_val(entry_date_raw)
+                sell_date = parse_date_val(exit_date_raw)
+                
+                if not buy_date or not sell_date:
+                    continue
+                    
+                quantity = float(get_val(["quantity", "qty"]) or 0.0)
+                buy_value = float(get_val(["buy value"]) or 0.0)
+                sell_value = float(get_val(["sell value"]) or 0.0)
+                
+                if quantity <= 0:
+                    continue
+                    
+                # Charges
+                brokerage = float(get_val(["brokerage"]) or 0.0)
+                exchange_charges = float(get_val(["exchange transaction charges", "exchange charges"]) or 0.0)
+                sebi_charges = float(get_val(["sebi charges"]) or 0.0)
+                cgst = float(get_val(["cgst"]) or 0.0)
+                sgst = float(get_val(["sgst"]) or 0.0)
+                igst = float(get_val(["igst"]) or 0.0)
+                stamp_duty = float(get_val(["stamp duty"]) or 0.0)
+                ipft = float(get_val(["ipft"]) or 0.0)
+                
+                transfer_expenses = brokerage + exchange_charges + sebi_charges + cgst + sgst + igst + stamp_duty + ipft
+                
+                buy_price = buy_value / quantity
+                sell_price = sell_value / quantity
+                sell_price_inr = (sell_value - transfer_expenses) / quantity
+                
+                record = {
+                    "symbol": symbol,
+                    "isin": isin,
+                    "quantity": quantity,
+                    "buy_date": buy_date,
+                    "buy_price": buy_price,
+                    "buy_price_inr": buy_price,
+                    "sell_date": sell_date,
+                    "sell_price": sell_price,
+                    "sell_price_inr": sell_price_inr,
+                    "rate_buy_used": 1.0,
+                    "rate_sell_used": 1.0,
+                    "transfer_expenses": transfer_expenses,
+                    "is_us": False
+                }
+                
+                if current_segment == "mutual funds":
+                    record["asset_type"] = self.classify_mf_asset_type(symbol)
+                else:
+                    record["asset_type"] = "stock"
+                    
+                records.append(record)
+            except Exception as e:
+                logger.warning(f"Error parsing Zerodha row {row_vals}: {e}")
                 continue
                 
         return records

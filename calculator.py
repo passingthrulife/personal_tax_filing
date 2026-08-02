@@ -815,6 +815,7 @@ class TaxCalculator:
             # --- Deductions (Chapter VIA) ---
             ded_80c = 0.0
             ded_80d = 0.0
+            ded_80ccd_1b = 0.0
             ded_80tta = 0.0
             ded_80ttb = 0.0
             total_deductions = 0.0
@@ -826,6 +827,11 @@ class TaxCalculator:
                 
                 # 80D
                 ded_80d = min(25000.0, float(form16.get("deduction_80d", 0.0)) + custom_80d)
+
+                # 80CCD(1B) NPS self-contribution
+                custom_80ccd_1b = float(inputs.get("custom_80ccd_1b", 0.0))
+                total_nps_1b = float(form16.get("deduction_80ccd_1b", 0.0)) + custom_80ccd_1b
+                ded_80ccd_1b = min(50000.0, total_nps_1b)
                 
                 # 80TTA / 80TTB
                 if is_senior:
@@ -835,7 +841,7 @@ class TaxCalculator:
                     # 80TTA: Capped at 10,000 on savings interest only
                     ded_80tta = min(10000.0, savings_interest)
                 
-                total_deductions = ded_80c + ded_80d + ded_80tta + ded_80ttb
+                total_deductions = ded_80c + ded_80d + ded_80tta + ded_80ttb + ded_80ccd_1b
             
             # Taxable Slab Income
             taxable_slab_income = max(0.0, net_slab_income - total_deductions)
@@ -932,6 +938,7 @@ class TaxCalculator:
                 "deductions": {
                     "80C": ded_80c,
                     "80D": ded_80d,
+                    "80CCD_1B": ded_80ccd_1b,
                     "80TTA": ded_80tta,
                     "80TTB": ded_80ttb,
                     "total": total_deductions

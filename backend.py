@@ -50,6 +50,7 @@ def process_tax():
     home_loan_principal_override = float(request.form.get("home_loan_principal", 0.0) or 0.0)
     custom_80c = float(request.form.get("custom_80c", 0.0) or 0.0)
     custom_80d = float(request.form.get("custom_80d", 0.0) or 0.0)
+    custom_80ccd_1b = float(request.form.get("custom_80ccd_1b", 0.0) or 0.0)
     
     advance_tax_override = request.form.get("advance_tax", None)
     if advance_tax_override == "":
@@ -63,11 +64,18 @@ def process_tax():
     # Retrieve uploaded files
     form16_file = request.files.get("form16")
     ais_tis_file = request.files.get("ais_tis")
-    indian_stock_file = request.files.get("indian_stock")
-    us_stock_file = request.files.get("us_stock")
-    mutual_funds_file = request.files.get("mutual_funds")
-    us_dividends_file = request.files.get("us_dividends_csv")
+    indian_stock_files = request.files.getlist("indian_stock")
+    us_stock_files = request.files.getlist("us_stock")
+    mutual_funds_files = request.files.getlist("mutual_funds")
+    us_dividends_files = request.files.getlist("us_dividends_csv")
     us_1042s_files = request.files.getlist("us_1042s")
+
+    # Validation: US dividends input is mandatory
+    if not us_dividends_files or not any(f.filename for f in us_dividends_files):
+        return jsonify({
+            "success": False,
+            "error": "US Dividends statement file is mandatory. Please upload your Charles Schwab statement (CSV or Excel)."
+        }), 400
 
     parsed_data = {
         "form16": {},
@@ -176,54 +184,100 @@ def process_tax():
         parsed_data["ais"] = ais_pdf_data
 
     # 3. Parse Stock Sales
-    if indian_stock_file and indian_stock_file.filename:
-        try:
-            if indian_stock_file.filename.lower().endswith(('.xlsx', '.xls')):
-                excel_bytes = indian_stock_file.read()
-                records = doc_parser.parse_hdfc_sec_excel(excel_bytes)
-            else:
-                indian_stock_csv = indian_stock_file.read().decode('utf-8')
-                records = doc_parser.parse_stock_sales_csv(indian_stock_csv, is_us=False)
-            parsed_data["stock_sales"].extend(records)
-            logger.info(f"Parsed {len(records)} Indian stock sales.")
-        except Exception as e:
-            logger.error(f"Error parsing Indian stock sales: {e}")
-            warnings.append(f"Error parsing Indian Stock Sales: {e}")
+    # 3.1 Indian Stock Sales (multiple files: CSV, Excel, PDF)
+    if indian_stock_files:
+        for f in indian_stock_files:
+            if f and f.filename:
+                try:
+                    filename = f.filename.lower()
+                    if filename.endswith(('.xlsx', '.xls')):
+                        excel_bytes = f.read()
+                        import io
+                        import openpyxl
+                        try:
+                            wb = openpyxl.load_workbook(io.BytesIO(excel_bytes), read_only=True)
+                            is_zerodha = any(name.strip().lower().startswith("tradewise exits") for name in wb.sheetnames)
+                        except Exception:
+                            is_zerodha = False
+                        
+                        if is_zerodha:
+                            records = doc_parser.parse_zerodha_excel(excel_bytes)
+                        else:
+                            records = doc_parser.parse_hdfc_sec_excel(excel_bytes)
+                    elif filename.endswith('.pdf'):
+                        pdf_bytes = f.read()
+                        records = doc_parser.parse_indian_stock_pdf(pdf_bytes)
+                    else:
+                        csv_content = f.read().decode('utf-8')
+                        records = doc_parser.parse_stock_sales_csv(csv_content, is_us=False)
+                    
+                    parsed_data["stock_sales"].extend(records)
+                    logger.info(f"Parsed {len(records)} Indian stock sales from {f.filename}.")
+                except Exception as e:
+                    logger.error(f"Error parsing Indian stock sales file {f.filename}: {e}")
+                    warnings.append(f"Error parsing Indian Stock Sales file '{f.filename}': {e}")
 
-    # 3.2 Parse Mutual Funds Statement
-    if mutual_funds_file and mutual_funds_file.filename:
-        try:
-            mf_bytes = mutual_funds_file.read()
-            records = doc_parser.parse_mutual_funds_pdf(mf_bytes)
-            parsed_data["stock_sales"].extend(records)
-            logger.info(f"Parsed {len(records)} Mutual Fund transaction lots.")
-        except Exception as e:
-            logger.error(f"Error parsing Mutual Funds: {e}")
-            warnings.append(f"Error parsing Mutual Funds: {e}")
+    # 3.2 Parse Mutual Funds Statement (multiple files: PDF)
+    if mutual_funds_files:
+        for f in mutual_funds_files:
+            if f and f.filename:
+                try:
+                    filename = f.filename.lower()
+                    if filename.endswith('.pdf'):
+                        mf_bytes = f.read()
+                        records = doc_parser.parse_mutual_funds_pdf(mf_bytes)
+                    else:
+                        records = []
+                    
+                    parsed_data["stock_sales"].extend(records)
+                    logger.info(f"Parsed {len(records)} Mutual Fund transaction lots from {f.filename}.")
+                except Exception as e:
+                    logger.error(f"Error parsing Mutual Funds file {f.filename}: {e}")
+                    warnings.append(f"Error parsing Mutual Funds file '{f.filename}': {e}")
 
-    if us_stock_file and us_stock_file.filename:
-        try:
-            us_stock_csv = us_stock_file.read().decode('utf-8')
-            records = doc_parser.parse_stock_sales_csv(us_stock_csv, is_us=True)
-            parsed_data["stock_sales"].extend(records)
-            logger.info(f"Parsed {len(records)} US stock sales.")
-        except Exception as e:
-            logger.error(f"Error parsing US stock sales CSV: {e}")
-            warnings.append(f"Error parsing US Stock Sales CSV: {e}")
+    # 3.3 US Stock Sales (multiple files: CSV, Excel, PDF)
+    if us_stock_files:
+        for f in us_stock_files:
+            if f and f.filename:
+                try:
+                    filename = f.filename.lower()
+                    if filename.endswith(('.xlsx', '.xls')):
+                        excel_bytes = f.read()
+                        records = doc_parser.parse_us_stock_excel(excel_bytes)
+                    elif filename.endswith('.pdf'):
+                        pdf_bytes = f.read()
+                        records = doc_parser.parse_us_stock_pdf(pdf_bytes)
+                    else:
+                        csv_content = f.read().decode('utf-8')
+                        records = doc_parser.parse_stock_sales_csv(csv_content, is_us=True)
+                    
+                    parsed_data["stock_sales"].extend(records)
+                    logger.info(f"Parsed {len(records)} US stock sales from {f.filename}.")
+                except Exception as e:
+                    logger.error(f"Error parsing US stock sales file {f.filename}: {e}")
+                    warnings.append(f"Error parsing US Stock Sales file '{f.filename}': {e}")
 
-    # 3.5 Parse US Dividends CSV
+    # 3.5 Parse US Dividends (multiple files: CSV, Excel)
     csv_divs = []
-    if us_dividends_file and us_dividends_file.filename:
-        try:
-            us_div_csv = us_dividends_file.read().decode('utf-8')
-            records = doc_parser.parse_us_dividends_csv(us_div_csv)
-            for r in records:
-                r["source"] = us_dividends_file.filename
-            csv_divs.extend(records)
-            logger.info(f"Parsed {len(records)} US dividends from CSV.")
-        except Exception as e:
-            logger.error(f"Error parsing US dividends CSV: {e}")
-            warnings.append(f"Error parsing US Dividends CSV: {e}")
+    if us_dividends_files:
+        for f in us_dividends_files:
+            if f and f.filename:
+                try:
+                    filename = f.filename.lower()
+                    if filename.endswith(('.xlsx', '.xls')):
+                        excel_bytes = f.read()
+                        records = doc_parser.parse_us_dividends_excel(excel_bytes)
+                    else:
+                        csv_content = f.read().decode('utf-8')
+                        records = doc_parser.parse_us_dividends_csv(csv_content)
+                    
+                    for r in records:
+                        r["source"] = f.filename
+                    csv_divs.extend(records)
+                    logger.info(f"Parsed {len(records)} US dividends from {f.filename}.")
+                except Exception as e:
+                    logger.error(f"Error parsing US dividends file {f.filename}: {e}")
+                    warnings.append(f"Error parsing US Dividends file '{f.filename}': {e}")
 
     # 4. Parse multiple Form 1042-S PDFs
     us_dividends_1042s = []
@@ -437,6 +491,7 @@ def process_tax():
         "home_loan_principal": home_loan_principal_override,
         "custom_80c": custom_80c,
         "custom_80d": custom_80d,
+        "custom_80ccd_1b": custom_80ccd_1b,
         "advance_tax_paid": advance_tax_override if advance_tax_override is not None else parsed_data["ais"].get("advance_tax_paid", 0.0),
         "dob": dob,
         "hra_basic": hra_basic,
@@ -460,9 +515,10 @@ def process_tax():
         # Check uploaded flags
         has_f16 = form16_file is not None and form16_file.filename != ""
         has_ais = ais_tis_file is not None and ais_tis_file.filename != ""
-        has_ind = indian_stock_file is not None and indian_stock_file.filename != ""
-        has_us = us_stock_file is not None and us_stock_file.filename != ""
-        has_mf = mutual_funds_file is not None and mutual_funds_file.filename != ""
+        has_ind = len(indian_stock_files) > 0 and any(f.filename != "" for f in indian_stock_files)
+        has_us = len(us_stock_files) > 0 and any(f.filename != "" for f in us_stock_files)
+        has_mf = len(mutual_funds_files) > 0 and any(f.filename != "" for f in mutual_funds_files)
+        has_div = len(us_dividends_files) > 0 and any(f.filename != "" for f in us_dividends_files)
         has_1042s = len(us_1042s_files) > 0 and any(f.filename != "" for f in us_1042s_files)
 
         response_data = {
@@ -477,6 +533,7 @@ def process_tax():
                 "indian_stock": has_ind,
                 "us_stock": has_us,
                 "mutual_funds": has_mf,
+                "us_dividends": has_div,
                 "us_1042s": has_1042s
             }
         }

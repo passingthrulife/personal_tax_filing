@@ -109,5 +109,30 @@ class TestMutualFunds(unittest.TestCase):
         # Should be sorted into LTCG unlisted bucket
         self.assertAlmostEqual(results["net_gains"]["ltcg_unlisted"], 1500.0, places=2)
 
+    def test_nps_deduction(self):
+        # 1. Prepare inputs with 1.5L 80C and 50k NPS contribution
+        inputs = {
+            "form16": {
+                "deduction_80c": 120000.0, # 1.2L EPF/80C
+                "deduction_80ccd_1b": 30000.0 # 30k NPS in Form 16
+            },
+            "custom_80c": 40000.0, # Additional 40k PPF
+            "custom_80ccd_1b": 25000.0, # Additional 25k NPS
+            "home_loan_principal": 0.0,
+            "custom_80d": 0.0,
+            "savings_interest": 0.0,
+            "fd_interest": 0.0,
+            "dob": "1990-01-01"
+        }
+        res = self.calculator.compute_tax_liability(inputs)
+        old_regime = res["regimes"]["old"]
+        
+        # 80C should be capped at 1.5L
+        self.assertEqual(old_regime["deductions"]["80C"], 150000.0)
+        # 80CCD_1B should be capped at 50k
+        self.assertEqual(old_regime["deductions"]["80CCD_1B"], 50000.0)
+        # Total Chapter VI-A deductions should sum to 2.0L
+        self.assertEqual(old_regime["deductions"]["total"], 200000.0)
+
 if __name__ == "__main__":
     unittest.main()

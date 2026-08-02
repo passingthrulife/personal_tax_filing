@@ -921,23 +921,37 @@
                     <input type="file" id="file_ais_tis" class="form-control-file" accept=".csv,.pdf" multiple>
                 </div>
                 <div class="form-group">
-                    <label for="file_indian_stock">Indian Stock Sales (CSV/Excel)</label>
-                    <input type="file" id="file_indian_stock" class="form-control-file" accept=".csv,.xlsx,.xls">
+                    <label for="file_indian_stock">Indian Stock Sales (CSV/Excel/PDF)</label>
+                    <input type="file" id="file_indian_stock" class="form-control-file" accept=".csv,.xlsx,.xls,.pdf" multiple>
                 </div>
                 <div class="form-group">
                     <label for="file_mutual_funds">Mutual Funds Statement (PDF/Excel)</label>
-                    <input type="file" id="file_mutual_funds" class="form-control-file" accept=".pdf,.xlsx,.xls,.csv">
+                    <input type="file" id="file_mutual_funds" class="form-control-file" accept=".pdf,.xlsx,.xls,.csv" multiple>
                 </div>
                 <div class="form-group">
-                    <label for="file_us_stock">US Stock Sales CSV</label>
-                    <input type="file" id="file_us_stock" class="form-control-file" accept=".csv">
+                    <label for="file_us_stock">US Stock Sales (CSV/Excel/PDF)</label>
+                    <input type="file" id="file_us_stock" class="form-control-file" accept=".csv,.xlsx,.xls,.pdf" multiple>
                 </div>
-                <div class="form-group">
-                    <label for="file_us_dividends">US Dividends CSV (optional)</label>
-                    <input type="file" id="file_us_dividends" class="form-control-file" accept=".csv">
-                    <small
-                        style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 0.2rem; display: block;">CSV
-                        containing date-by-date US dividend transactions</small>
+                <div class="form-group" style="position: relative;">
+                    <label for="file_us_dividends" style="display: flex; align-items: center; gap: 0.4rem;">
+                        US Dividends CSV/Excel <span style="color: var(--danger); font-weight: bold;">*</span>
+                        <span class="info-icon" style="cursor: pointer; color: var(--primary); display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--primary); font-size: 0.7rem; font-weight: bold; font-family: serif;">i</span>
+                    </label>
+                    <input type="file" id="file_us_dividends" class="form-control-file" accept=".csv,.xlsx,.xls" required>
+                    
+                    <div class="guidelines-box" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 6px; padding: 0.8rem; margin-top: 0.5rem; font-size: 0.72rem; line-height: 1.4; color: var(--text-secondary);">
+                        <div style="font-weight: 700; color: #fff; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.3rem;">
+                            💡 Charles Schwab Format Guidelines
+                        </div>
+                        Please consolidate all dividend transactions into a <strong>single file</strong>. Even if your transactions are from a different broker, match the Charles Schwab CSV column names:
+                        <div style="font-family: monospace; background: rgba(0,0,0,0.2); padding: 0.3rem 0.5rem; border-radius: 4px; margin: 0.4rem 0; color: #a5b4fc; word-break: break-all;">
+                            Date, Action, Symbol, Description, Quantity, Price, Amount
+                        </div>
+                        Example row for a dividend payout:
+                        <div style="font-family: monospace; background: rgba(0,0,0,0.2); padding: 0.3rem 0.5rem; border-radius: 4px; color: #86efac; word-break: break-all;">
+                            2025-06-15, "Qualifying Dividend", AAPL, "Apple Inc Dividend", , , 45.50
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="file_us_1042s">US Form 1042-S PDFs</label>
@@ -971,6 +985,10 @@
                 <div class="form-group">
                     <label for="custom_80d">Health Insurance u/s 80D</label>
                     <input type="number" id="custom_80d" class="form-control" placeholder="e.g. 15000">
+                </div>
+                <div class="form-group">
+                    <label for="custom_80ccd_1b">NPS Self-Contribution u/s 80CCD(1B)</label>
+                    <input type="number" id="custom_80ccd_1b" class="form-control" placeholder="e.g. 50000">
                 </div>
                 <div class="form-group">
                     <label for="advance_tax">Advance Tax Paid</label>
@@ -1608,6 +1626,16 @@
                                 <div class="row-value-area">
                                     <span class="row-val" id="via-80d">₹0</span>
                                     <button class="btn-copy" onclick="copyVal('via-80d')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="table-row">
+                                <div class="row-label">
+                                    <span class="label-main">Section 80CCD(1B)</span>
+                                    <span class="label-sub">National Pension Scheme self-contribution (Capped at ₹50,000, over and above 80C)</span>
+                                </div>
+                                <div class="row-value-area">
+                                    <span class="row-val" id="via-80ccd-1b">₹0</span>
+                                    <button class="btn-copy" onclick="copyVal('via-80ccd-1b')">Copy</button>
                                 </div>
                             </div>
                             <div class="table-row">
@@ -3226,6 +3254,7 @@
             formData.append("home_loan_principal", document.getElementById("home_loan_principal").value);
             formData.append("custom_80c", document.getElementById("custom_80c").value);
             formData.append("custom_80d", document.getElementById("custom_80d").value);
+            formData.append("custom_80ccd_1b", document.getElementById("custom_80ccd_1b").value);
             formData.append("advance_tax", document.getElementById("advance_tax").value);
             formData.append("hra_basic", document.getElementById("hra_basic").value);
             formData.append("hra_received", document.getElementById("hra_received").value);
@@ -3246,17 +3275,28 @@
                 }
             }
 
-            const indStock = document.getElementById("file_indian_stock").files[0];
-            if (indStock) formData.append("indian_stock", indStock);
+            const indStockFiles = document.getElementById("file_indian_stock").files;
+            for (let i = 0; i < indStockFiles.length; i++) {
+                formData.append("indian_stock", indStockFiles[i]);
+            }
 
-            const mutualFunds = document.getElementById("file_mutual_funds").files[0];
-            if (mutualFunds) formData.append("mutual_funds", mutualFunds);
+            const mfFiles = document.getElementById("file_mutual_funds").files;
+            for (let i = 0; i < mfFiles.length; i++) {
+                formData.append("mutual_funds", mfFiles[i]);
+            }
 
-            const usStock = document.getElementById("file_us_stock").files[0];
-            if (usStock) formData.append("us_stock", usStock);
+            const usStockFiles = document.getElementById("file_us_stock").files;
+            for (let i = 0; i < usStockFiles.length; i++) {
+                formData.append("us_stock", usStockFiles[i]);
+            }
 
-            const usDividends = document.getElementById("file_us_dividends").files[0];
-            if (usDividends) formData.append("us_dividends_csv", usDividends);
+            const usDividendsFiles = document.getElementById("file_us_dividends").files;
+            if (usDividendsFiles.length === 0) {
+                alert("US Dividends CSV/Excel file is mandatory. Please upload your Charles Schwab format statement.");
+                document.getElementById("loader").style.display = "none";
+                return;
+            }
+            formData.append("us_dividends_csv", usDividendsFiles[0]);
 
             const us1042s = document.getElementById("file_us_1042s").files;
             for (let i = 0; i < us1042s.length; i++) {
@@ -3543,9 +3583,10 @@
             compBody.innerHTML += makeCompRow("Gross Total Income", "Slabs Income + HP + Other Sources", oldR.net_salary + oldR.house_property_income + oldR.other_sources_income, newR.net_salary + newR.house_property_income + newR.other_sources_income, optimal);
             compBody.innerHTML += makeCompRow("Less: Section 80C Deduction", "Life insurance, EPF, HL principal (Capped at 1.5L)", oldR.deductions["80C"], newR.deductions["80C"], optimal);
             compBody.innerHTML += makeCompRow("Less: Section 80D Deduction", "Health Insurance (Capped at 25k)", oldR.deductions["80D"], newR.deductions["80D"], optimal);
+            compBody.innerHTML += makeCompRow("Less: Section 80CCD(1B) NPS", "National Pension Scheme self-contribution (Capped at 50k)", oldR.deductions["80CCD_1B"] || 0, newR.deductions["80CCD_1B"] || 0, optimal);
             compBody.innerHTML += makeCompRow("Less: Section 80TTA Deduction", "Interest on savings accounts (Non-Seniors, Capped at 10k)", oldR.deductions["80TTA"] || 0, newR.deductions["80TTA"] || 0, optimal);
             compBody.innerHTML += makeCompRow("Less: Section 80TTB Deduction", "Interest on savings & FDs (Seniors, Capped at 50k)", oldR.deductions["80TTB"] || 0, newR.deductions["80TTB"] || 0, optimal);
-            compBody.innerHTML += makeCompRow("Total Chapter VI-A Deductions", "Sum of 80C, 80D, 80TTA/80TTB deductions", oldR.deductions.total, newR.deductions.total, optimal);
+            compBody.innerHTML += makeCompRow("Total Chapter VI-A Deductions", "Sum of 80C, 80D, 80CCD(1B), 80TTA/80TTB deductions", oldR.deductions.total, newR.deductions.total, optimal);
             compBody.innerHTML += makeCompRow("Taxable Slab Income", "Income taxed at slab rates", oldR.taxable_slab_income, newR.taxable_slab_income, optimal);
             compBody.innerHTML += makeCompRow("Special Rate Capital Gains", "Gains taxed at special rates (111A/112A/112)", oldR.special_cg_income, newR.special_cg_income, optimal);
             compBody.innerHTML += makeCompRow("Virtual Digital Assets (VDA) Gains", "Gains from cryptocurrency trades taxed u/s 115BBH", oldR.vda_income || 0, newR.vda_income || 0, optimal);
@@ -3766,6 +3807,7 @@
             const oldDeductions = results.regimes.old.deductions;
             document.getElementById("via-80c").innerText = formatINR(oldDeductions["80C"] || 0);
             document.getElementById("via-80d").innerText = formatINR(oldDeductions["80D"] || 0);
+            document.getElementById("via-80ccd-1b").innerText = formatINR(oldDeductions["80CCD_1B"] || 0);
             document.getElementById("via-80tta").innerText = formatINR(oldDeductions["80TTA"] || 0);
             document.getElementById("via-80ttb").innerText = formatINR(oldDeductions["80TTB"] || 0);
 
