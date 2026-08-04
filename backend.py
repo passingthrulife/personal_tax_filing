@@ -4,8 +4,8 @@ from datetime import datetime, date
 import logging
 from flask import Flask, request, jsonify, render_template
 from rate_resolver import RateResolver
-from parser import DocumentParser
-from calculator import TaxCalculator
+from parsers import DocumentParser
+from tax_engine import TaxCalculator
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -67,11 +67,12 @@ def process_tax():
     us_dividends_files = request.files.getlist("us_dividends_csv")
     us_1042s_files = request.files.getlist("us_1042s")
 
-    # Validation: US dividends input is mandatory
-    if not us_dividends_files or not any(f.filename for f in us_dividends_files):
+    # Validation: US dividends input is mandatory only if 1042-S is uploaded
+    has_1042s = us_1042s_files and any(f.filename for f in us_1042s_files)
+    if has_1042s and (not us_dividends_files or not any(f.filename for f in us_dividends_files)):
         return jsonify({
             "success": False,
-            "error": "US Dividends statement file is mandatory. Please upload your Charles Schwab statement (CSV or Excel)."
+            "error": "US Dividends statement file is mandatory when US Form 1042-S is uploaded. Please upload your Charles Schwab statement (CSV or Excel)."
         }), 400
 
     parsed_data = {
@@ -253,6 +254,84 @@ def process_tax():
                 except Exception as e:
                     logger.error(f"Error parsing US stock sales file {f.filename}: {e}")
                     warnings.append(f"Error parsing US Stock Sales file '{f.filename}': {e}")
+
+    # 3.4 Parse Manual Stock Entries
+    manual_indian_stocks_str = request.form.get("manual_indian_stocks", "[]")
+    manual_us_stocks_str = request.form.get("manual_us_stocks", "[]")
+    
+    try:
+        manual_indian_stocks = json.loads(manual_indian_stocks_str)
+        for entry in manual_indian_stocks:
+            symbol = entry.get("symbol", "").strip().upper()
+            isin = entry.get("isin", "").strip().upper()
+            qty_str = str(entry.get("quantity") or "").strip()
+            if not qty_str:
+                continue
+            qty = float(qty_str)
+            if qty <= 0:
+                continue
+            buy_dt = datetime.strptime(entry.get("buy_date"), "%Y-%m-%d").date()
+            buy_pr = float(str(entry.get("buy_price") or 0.0).strip())
+            sell_dt = datetime.strptime(entry.get("sell_date"), "%Y-%m-%d").date()
+            sell_pr = float(str(entry.get("sell_price") or 0.0).strip())
+            charges = float(str(entry.get("transfer_expenses") or 0.0).strip())
+            
+            parsed_data["stock_sales"].append({
+                "symbol": symbol or "MANUAL_IND",
+                "isin": isin,
+                "quantity": qty,
+                "buy_date": buy_dt,
+                "buy_price_inr": buy_pr,
+                "sell_date": sell_dt,
+                "sell_price_inr": sell_pr,
+                "transfer_expenses": charges,
+                "is_us": False
+            })
+            logger.info(f"Added manual Indian stock transaction: {symbol}")
+    except Exception as e:
+        logger.error(f"Error parsing manual Indian stock entries: {e}")
+        warnings.append(f"Failed to parse manual Indian stock entries: {e}")
+
+    try:
+        manual_us_stocks = json.loads(manual_us_stocks_str)
+        for entry in manual_us_stocks:
+            symbol = entry.get("symbol", "").strip().upper()
+            qty_str = str(entry.get("quantity") or "").strip()
+            if not qty_str:
+                continue
+            qty = float(qty_str)
+            if qty <= 0:
+                continue
+            buy_dt = datetime.strptime(entry.get("buy_date"), "%Y-%m-%d").date()
+            buy_pr_usd = float(str(entry.get("buy_price") or 0.0).strip())
+            sell_dt = datetime.strptime(entry.get("sell_date"), "%Y-%m-%d").date()
+            sell_pr_usd = float(str(entry.get("sell_price") or 0.0).strip())
+            charges_usd = float(str(entry.get("transfer_expenses") or 0.0).strip())
+            
+            # Resolve currency conversion rates
+            buy_rate = rate_resolver.resolve_rule_115_rate(buy_dt)
+            sell_rate = rate_resolver.resolve_rule_115_rate(sell_dt)
+            
+            buy_price_inr = round(buy_pr_usd * buy_rate, 4)
+            sell_price_inr = round(sell_pr_usd * sell_rate, 4)
+            transfer_expenses_inr = round(charges_usd * sell_rate, 4)
+            
+            parsed_data["stock_sales"].append({
+                "symbol": symbol or "MANUAL_US",
+                "quantity": qty,
+                "buy_date": buy_dt,
+                "buy_price": buy_pr_usd,
+                "buy_price_inr": buy_price_inr,
+                "sell_date": sell_dt,
+                "sell_price": sell_pr_usd,
+                "sell_price_inr": sell_price_inr,
+                "transfer_expenses": transfer_expenses_inr,
+                "is_us": True
+            })
+            logger.info(f"Added manual US stock transaction: {symbol}")
+    except Exception as e:
+        logger.error(f"Error parsing manual US stock entries: {e}")
+        warnings.append(f"Failed to parse manual US stock entries: {e}")
 
     # 3.5 Parse US Dividends (multiple files: CSV, Excel)
     csv_divs = []
@@ -476,6 +555,29 @@ def process_tax():
         except Exception as e:
             logger.error(f"Error saving Capital Gains Exemptions: {e}")
 
+    # Parse House Properties
+    house_properties_str = request.form.get("house_properties", "[]")
+    house_properties = []
+    try:
+        if house_properties_str:
+            house_properties = json.loads(house_properties_str)
+    except Exception as e:
+        logger.error(f"Error parsing house properties JSON: {e}")
+        warnings.append(f"Failed to parse house properties list: {e}")
+        
+    if not house_properties:
+        # Fallback to legacy home_loan_interest input field
+        legacy_interest = home_loan_interest_override if home_loan_interest_override is not None else parsed_data["form16"].get("home_loan_interest_24b", 0.0)
+        if legacy_interest > 0:
+            house_properties = [
+                {
+                    "property_type": "SOP",
+                    "gross_rent": 0.0,
+                    "municipal_taxes": 0.0,
+                    "home_loan_interest": legacy_interest
+                }
+            ]
+
     # Assemble calculator inputs
     calculator_inputs = {
         "form16": parsed_data["form16"],
@@ -496,7 +598,8 @@ def process_tax():
         "hra_rent": hra_rent,
         "hra_metro": hra_metro,
         "schedule_fa": schedule_fa,
-        "cg_exemptions": cg_exemptions
+        "cg_exemptions": cg_exemptions,
+        "house_properties": house_properties
     }
 
     # Run tax computations

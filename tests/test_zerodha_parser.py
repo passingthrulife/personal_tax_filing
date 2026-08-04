@@ -6,7 +6,7 @@ from datetime import date
 # Append parent directory to path so we can import local modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from parser import DocumentParser
+from parsers import DocumentParser
 from rate_resolver import RateResolver
 
 class TestZerodhaParser(unittest.TestCase):

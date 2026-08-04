@@ -46,6 +46,39 @@
                 radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
         }
 
+        .manual-table input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.3rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .manual-table input[type="date"] {
+            padding: 0.1rem 0.2rem;
+            min-width: 95px;
+        }
+        .manual-table th, .manual-table td {
+            border: none;
+            padding: 0.3rem 0.15rem;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
         header {
             display: flex;
             align-items: center;
@@ -934,10 +967,10 @@
                 </div>
                 <div class="form-group" style="position: relative;">
                     <label for="file_us_dividends" style="display: flex; align-items: center; gap: 0.4rem;">
-                        US Dividends CSV/Excel <span style="color: var(--danger); font-weight: bold;">*</span>
+                        US Dividends CSV/Excel
                         <span class="info-icon" style="cursor: pointer; color: var(--primary); display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--primary); font-size: 0.7rem; font-weight: bold; font-family: serif;">i</span>
                     </label>
-                    <input type="file" id="file_us_dividends" class="form-control-file" accept=".csv,.xlsx,.xls" required>
+                    <input type="file" id="file_us_dividends" class="form-control-file" accept=".csv,.xlsx,.xls">
                     
                     <div class="guidelines-box" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 6px; padding: 0.8rem; margin-top: 0.5rem; font-size: 0.72rem; line-height: 1.4; color: var(--text-secondary);">
                         <div style="font-weight: 700; color: #fff; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.3rem;">
@@ -959,6 +992,103 @@
                     <small
                         style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 0.2rem; display: block;">Supports
                         selecting multiple 1042-S PDFs</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleManualGains()">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        Manual Capital Gains
+                    </div>
+                    <span id="manual-gains-toggle-icon" style="font-size: 0.8rem; color: var(--text-secondary);">▶</span>
+                </div>
+                
+                <div id="manual-gains-content" style="display: none; margin-top: 1rem;">
+                    <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                        <button type="button" class="tab-btn active" id="btn-tab-indian" onclick="switchManualTab('indian')">Indian Stocks</button>
+                        <button type="button" class="tab-btn" id="btn-tab-us" onclick="switchManualTab('us')">US Stocks</button>
+                    </div>
+
+                    <!-- Indian Stocks Table -->
+                    <div id="manual-tab-indian">
+                        <div style="overflow-x: auto; margin-bottom: 0.5rem;">
+                            <table class="manual-table" id="table-manual-indian" style="width: 100%; border-collapse: collapse; min-width: 500px; font-size: 0.7rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-secondary);">
+                                        <th style="padding: 0.3rem;">Symbol</th>
+                                        <th style="padding: 0.3rem;">ISIN</th>
+                                        <th style="padding: 0.3rem;">Qty</th>
+                                        <th style="padding: 0.3rem;">Buy Date</th>
+                                        <th style="padding: 0.3rem;">Buy Price</th>
+                                        <th style="padding: 0.3rem;">Sell Date</th>
+                                        <th style="padding: 0.3rem;">Sell Price</th>
+                                        <th style="padding: 0.3rem;">Charges</th>
+                                        <th style="padding: 0.3rem; text-align: center;">Act</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" onclick="addManualRow('indian')" style="background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); color: var(--primary); border-radius: 4px; padding: 0.3rem 0.6rem; font-size: 0.7rem; cursor: pointer; width: 100%;">+ Add Indian Stock Row</button>
+                    </div>
+
+                    <!-- US Stocks Table -->
+                    <div id="manual-tab-us" style="display: none;">
+                        <div style="overflow-x: auto; margin-bottom: 0.5rem;">
+                            <table class="manual-table" id="table-manual-us" style="width: 100%; border-collapse: collapse; min-width: 500px; font-size: 0.7rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-secondary);">
+                                        <th style="padding: 0.3rem;">Symbol</th>
+                                        <th style="padding: 0.3rem;">Qty</th>
+                                        <th style="padding: 0.3rem;">Buy Date</th>
+                                        <th style="padding: 0.3rem;">Buy Price ($)</th>
+                                        <th style="padding: 0.3rem;">Sell Date</th>
+                                        <th style="padding: 0.3rem;">Sell Price ($)</th>
+                                        <th style="padding: 0.3rem;">Charges ($)</th>
+                                        <th style="padding: 0.3rem; text-align: center;">Act</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" onclick="addManualRow('us')" style="background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); color: var(--primary); border-radius: 4px; padding: 0.3rem 0.6rem; font-size: 0.7rem; cursor: pointer; width: 100%;">+ Add US Stock Row</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleHouseProperty()">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        House Property Details
+                    </div>
+                    <span id="house-prop-toggle-icon" style="font-size: 0.8rem; color: var(--text-secondary);">▶</span>
+                </div>
+                
+                <div id="house-prop-content" style="display: none; margin-top: 1rem;">
+                    <div style="overflow-x: auto; margin-bottom: 0.5rem;">
+                        <table class="manual-table" id="table-house-properties" style="width: 100%; border-collapse: collapse; min-width: 400px; font-size: 0.7rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-secondary);">
+                                    <th style="padding: 0.3rem;">Type</th>
+                                    <th style="padding: 0.3rem;">Gross Rent</th>
+                                    <th style="padding: 0.3rem;">Muni. Taxes</th>
+                                    <th style="padding: 0.3rem;">Loan Interest</th>
+                                    <th style="padding: 0.3rem; text-align: center;">Act</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" onclick="addPropertyRow()" style="background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); color: var(--primary); border-radius: 4px; padding: 0.3rem 0.6rem; font-size: 0.7rem; cursor: pointer; width: 100%;">+ Add Property</button>
                 </div>
             </div>
 
@@ -2009,6 +2139,170 @@
 
     <script>
         let globalProcessedData = null; // Store raw parsed data for popups
+
+        function toggleManualGains() {
+            const content = document.getElementById("manual-gains-content");
+            const icon = document.getElementById("manual-gains-toggle-icon");
+            if (content.style.display === "none") {
+                content.style.display = "block";
+                icon.textContent = "▼";
+            } else {
+                content.style.display = "none";
+                icon.textContent = "▶";
+            }
+        }
+
+        function switchManualTab(tab) {
+            const btnInd = document.getElementById("btn-tab-indian");
+            const btnUs = document.getElementById("btn-tab-us");
+            const tabInd = document.getElementById("manual-tab-indian");
+            const tabUs = document.getElementById("manual-tab-us");
+            
+            if (tab === 'indian') {
+                btnInd.classList.add("active");
+                btnUs.classList.remove("active");
+                tabInd.style.display = "block";
+                tabUs.style.display = "none";
+            } else {
+                btnInd.classList.remove("active");
+                btnUs.classList.add("active");
+                tabInd.style.display = "none";
+                tabUs.style.display = "block";
+            }
+        }
+
+        function addManualRow(type) {
+            const tbody = document.querySelector(`#table-manual-${type} tbody`);
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid var(--border-color)";
+            
+            if (type === 'indian') {
+                tr.innerHTML = `
+                    <td><input type="text" class="manual-symbol" placeholder="INF..." required style="min-width: 60px;"></td>
+                    <td><input type="text" class="manual-isin" placeholder="INE..." style="min-width: 80px;"></td>
+                    <td><input type="number" step="any" class="manual-quantity" placeholder="10" required style="min-width: 45px;"></td>
+                    <td><input type="date" class="manual-buy-date" required></td>
+                    <td><input type="number" step="any" class="manual-buy-price" placeholder="100" required style="min-width: 55px;"></td>
+                    <td><input type="date" class="manual-sell-date" required></td>
+                    <td><input type="number" step="any" class="manual-sell-price" placeholder="120" required style="min-width: 55px;"></td>
+                    <td><input type="number" step="any" class="manual-charges" placeholder="0" style="min-width: 45px;"></td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <button type="button" onclick="this.closest('tr').remove()" style="background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.3rem;">✕</button>
+                    </td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td><input type="text" class="manual-symbol" placeholder="AAPL" required style="min-width: 60px;"></td>
+                    <td><input type="number" step="any" class="manual-quantity" placeholder="10" required style="min-width: 45px;"></td>
+                    <td><input type="date" class="manual-buy-date" required></td>
+                    <td><input type="number" step="any" class="manual-buy-price" placeholder="150" required style="min-width: 55px;"></td>
+                    <td><input type="date" class="manual-sell-date" required></td>
+                    <td><input type="number" step="any" class="manual-sell-price" placeholder="180" required style="min-width: 55px;"></td>
+                    <td><input type="number" step="any" class="manual-charges" placeholder="0" style="min-width: 45px;"></td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <button type="button" onclick="this.closest('tr').remove()" style="background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.3rem;">✕</button>
+                    </td>
+                `;
+            }
+            tbody.appendChild(tr);
+        }
+
+        function serializeManualGains(type) {
+            const rows = document.querySelectorAll(`#table-manual-${type} tbody tr`);
+            const data = [];
+            rows.forEach(tr => {
+                const symbol = tr.querySelector(".manual-symbol").value.trim();
+                const quantity = tr.querySelector(".manual-quantity").value;
+                const buy_date = tr.querySelector(".manual-buy-date").value;
+                const buy_price = tr.querySelector(".manual-buy-price").value;
+                const sell_date = tr.querySelector(".manual-sell-date").value;
+                const sell_price = tr.querySelector(".manual-sell-price").value;
+                const transfer_expenses = tr.querySelector(".manual-charges").value || 0;
+                
+                const record = {
+                    symbol: symbol,
+                    quantity: quantity,
+                    buy_date: buy_date,
+                    buy_price: buy_price,
+                    sell_date: sell_date,
+                    sell_price: sell_price,
+                    transfer_expenses: transfer_expenses
+                };
+                if (type === 'indian') {
+                    record.isin = tr.querySelector(".manual-isin").value.trim();
+                }
+                data.push(record);
+            });
+            return data;
+        }
+
+        function toggleHouseProperty() {
+            const content = document.getElementById("house-prop-content");
+            const icon = document.getElementById("house-prop-toggle-icon");
+            if (content.style.display === "none") {
+                content.style.display = "block";
+                icon.textContent = "▼";
+            } else {
+                content.style.display = "none";
+                icon.textContent = "▶";
+            }
+        }
+
+        function onPropertyTypeChange(selectEl) {
+            const tr = selectEl.closest("tr");
+            const rentInput = tr.querySelector(".prop-rent");
+            const taxInput = tr.querySelector(".prop-taxes");
+            if (selectEl.value === 'SOP') {
+                rentInput.value = '0';
+                rentInput.disabled = true;
+                taxInput.value = '0';
+                taxInput.disabled = true;
+            } else {
+                rentInput.disabled = false;
+                taxInput.disabled = false;
+            }
+        }
+
+        function addPropertyRow() {
+            const tbody = document.querySelector("#table-house-properties tbody");
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid var(--border-color)";
+            tr.innerHTML = `
+                <td>
+                    <select class="prop-type" onchange="onPropertyTypeChange(this)" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 3px; color: #fff; font-size: 0.7rem; padding: 0.2rem 0.1rem; width: 100%;">
+                        <option value="SOP">Self-Occupied</option>
+                        <option value="LOP">Let-Out</option>
+                        <option value="DLOP">Deemed Let-Out</option>
+                    </select>
+                </td>
+                <td><input type="number" step="any" class="prop-rent" placeholder="0" value="0" disabled style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 3px; color: #fff; font-size: 0.7rem; padding: 0.2rem 0.3rem; width: 100%; box-sizing: border-box;"></td>
+                <td><input type="number" step="any" class="prop-taxes" placeholder="0" value="0" disabled style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 3px; color: #fff; font-size: 0.7rem; padding: 0.2rem 0.3rem; width: 100%; box-sizing: border-box;"></td>
+                <td><input type="number" step="any" class="prop-interest" placeholder="e.g. 150000" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 3px; color: #fff; font-size: 0.7rem; padding: 0.2rem 0.3rem; width: 100%; box-sizing: border-box;"></td>
+                <td style="text-align: center; vertical-align: middle;">
+                    <button type="button" onclick="this.closest('tr').remove()" style="background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.3rem;">✕</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function serializeHouseProperties() {
+            const rows = document.querySelectorAll("#table-house-properties tbody tr");
+            const data = [];
+            rows.forEach(tr => {
+                const prop_type = tr.querySelector(".prop-type").value;
+                const gross_rent = tr.querySelector(".prop-rent").value || 0;
+                const municipal_taxes = tr.querySelector(".prop-taxes").value || 0;
+                const home_loan_interest = tr.querySelector(".prop-interest").value || 0;
+                
+                data.push({
+                    property_type: prop_type,
+                    gross_rent: parseFloat(gross_rent),
+                    municipal_taxes: parseFloat(municipal_taxes),
+                    home_loan_interest: parseFloat(home_loan_interest)
+                });
+            });
+            return data;
+        }
 
         function showModal(title, html) {
             document.getElementById("modal-title").textContent = title;
@@ -3290,18 +3584,25 @@
                 formData.append("us_stock", usStockFiles[i]);
             }
 
-            const usDividendsFiles = document.getElementById("file_us_dividends").files;
-            if (usDividendsFiles.length === 0) {
-                alert("US Dividends CSV/Excel file is mandatory. Please upload your Charles Schwab format statement.");
-                document.getElementById("loader").style.display = "none";
-                return;
-            }
-            formData.append("us_dividends_csv", usDividendsFiles[0]);
-
             const us1042s = document.getElementById("file_us_1042s").files;
             for (let i = 0; i < us1042s.length; i++) {
                 formData.append("us_1042s", us1042s[i]);
             }
+
+            const usDividendsFiles = document.getElementById("file_us_dividends").files;
+            if (us1042s.length > 0 && usDividendsFiles.length === 0) {
+                alert("US Dividends CSV/Excel file is mandatory when US Form 1042-S is uploaded. Please upload your Charles Schwab format statement.");
+                document.getElementById("loader").style.display = "none";
+                return;
+            }
+            if (usDividendsFiles.length > 0) {
+                formData.append("us_dividends_csv", usDividendsFiles[0]);
+            }
+
+            // Append manual stock entries
+            formData.append("manual_indian_stocks", JSON.stringify(serializeManualGains('indian')));
+            formData.append("manual_us_stocks", JSON.stringify(serializeManualGains('us')));
+            formData.append("house_properties", JSON.stringify(serializeHouseProperties()));
 
             const vdaFile = document.getElementById("file_vda_trades").files[0];
             if (vdaFile) formData.append("vda_trades_csv", vdaFile);

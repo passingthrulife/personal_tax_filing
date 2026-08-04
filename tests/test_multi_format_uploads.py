@@ -15,18 +15,19 @@ class TestMultiFormatUploads(unittest.TestCase):
         self.app.testing = True
 
     def test_mandatory_us_dividends_validation(self):
-        # Sending request without US dividends should fail with 400 Bad Request
+        # 1. Sending request with 1042-S but without US dividends should fail with 400 Bad Request
         payload = {
             "pan": "ABCDE1234F",
             "dob": "01011990",
-            "fy": "2025-26"
+            "fy": "2025-26",
+            "us_1042s": (io.BytesIO(b"dummy pdf content"), "form1042s.pdf")
         }
         response = self.app.post("/api/process", data=payload, content_type="multipart/form-data")
         self.assertEqual(response.status_code, 400)
         
         data = json.loads(response.data.decode("utf-8"))
         self.assertFalse(data["success"])
-        self.assertIn("US Dividends statement file is mandatory", data["error"])
+        self.assertIn("US Dividends statement file is mandatory when US Form 1042-S is uploaded", data["error"])
 
     def test_successful_parsing_with_mandatory_dividends(self):
         # Prepare sample files
