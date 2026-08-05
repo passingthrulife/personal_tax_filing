@@ -13,10 +13,12 @@ The tool parses official PDFs and statements locally, resolves exchange rates u/
 * **AIS/TIS PDF Parser**: Uses a state-machine parser to scan the TIS/AIS Statement PDF, extracting and listing every savings account bank, deposit interest account, domestic company dividend, and advance tax payment.
 * **EPFO Taxable Interest**: Parses taxable interest from employee EPF contributions exceeding ₹2.5 Lakhs (along with Section 194A TDS credits).
 * **US Stock Realizations**: Parses Schwab/Fidelity CSV statements, converts USD to INR using the exact date-by-date SBI TT Buying rate, and computes short-term/long-term capital gains.
-* **Section 234C & 234B Interest**: Extracts actual dates of advance tax payments from the AIS PDF to compute bucketed quarterly shortfalls and interest charges u/s 234C and 234B.
+* **Carried-Forward Capital Losses (Sec 74)**: Supports setting off brought-forward short-term (BF STCL) and long-term (BF LTCL) capital losses from previous years against current eligible gains (BF LTCL u/s 74 is restricted to LTCG, while BF STCL can set off against both STCG and LTCG).
+* **Section 234C & 234B Interest & Ledger**: Extracts actual dates of advance tax payments to compute bucked quarterly shortfalls and interest charges. Includes a **transparency ledger modal** displaying installment target percentages, assessed cumulative tax liability, actual paid cumulative tax, and interest accrued per installment.
+* **Surcharge Capping (15%) & Surcharge Marginal Relief**: Caps surcharge on dividends and special capital gains (Section 111A, 112A, 112) at 15%. Implements proportional scaling surcharge marginal relief under both regimes at all thresholds (₹50L, ₹1Cr, ₹2Cr, ₹5Cr).
 * **Form 67 FTC Relief**: Automatically computes Foreign Tax Credit (FTC) relief under Section 90 for double-taxed US stock dividends.
 * **Capital Gains Exemptions**: Factors in reinvestment exemptions (Section 54F, 54EC) for unlisted US stock sales.
-* **Interactive Modals**: Clickable schedule items on the dashboard show detailed breakdowns of individual bank transactions and assets.
+* **Interactive Modals**: Clickable schedule items on the dashboard show detailed breakdowns of individual bank transactions, assets, and the advance tax ledger.
 * **Printable PDF Reports**: Generates a high-fidelity tax computation sheet summarizing comparative schedules and transaction registers, printable directly to PDF.
 
 ---
@@ -29,6 +31,7 @@ Indian residents who file **ITR-1** or **ITR-2** and have:
 3. **Double-Taxed Foreign Dividends** requiring Section 90 relief and Form 67 preparation.
 4. **Interest Income** across multiple bank accounts and Fixed Deposits.
 5. **Taxable EPF Interest** from high employee provident fund contributions.
+6. **Carried-Forward Losses** from previous tax years.
 
 ---
 
@@ -49,10 +52,10 @@ To run calculations, upload the following files via the dashboard:
 ## 🛠️ Technical Requirements
 
 * **Python**: Version `3.9` or higher.
-* **Dependencies**: Minimal dependencies (only standard library + Flask web framework, PyPDF2 parser, and dateutil):
-  - `Flask==3.0.3`
-  - `PyPDF2==2.12.1`
-  - `python-dateutil==2.8.2`
+* **Dependencies**: Minimal dependencies (only Flask web framework, pypdf parser, and dateutil):
+  - `Flask==3.1.3`
+  - `pypdf==6.14.2`
+  - `python-dateutil==2.9.0.post0`
 
 ---
 
@@ -69,4 +72,4 @@ To run calculations, upload the following files via the dashboard:
    ```
 
 3. **Use the Application**:
-   Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your web browser, enter your PAN & Date of Birth, upload your statements, and click **Process Tax Data**.
+   Open [http://127.0.0.1:5001](http://127.0.0.1:5001) in your web browser, enter your PAN & Date of Birth, upload your statements, and click **Process Tax Data**. (Note: runs on port `5001` to avoid conflicts with macOS AirPlay Receiver).
