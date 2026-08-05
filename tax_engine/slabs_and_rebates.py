@@ -133,3 +133,83 @@ class SlabsAndRebatesCalculatorMixin:
             
         surcharge_other = tax_other * rate_other
         return surcharge_capped + surcharge_other
+
+    def compute_basic_tax_components(self, is_new: bool, slab_income: float, stcg_listed: float, ltcg_listed: float, ltcg_unlisted: float, vda_gains: float, rates_info: dict) -> tuple:
+        slab_tax, _ = self.calculate_slab_tax(slab_income, is_new)
+        
+        stcg_listed_tax = stcg_listed * rates_info.get("rate_111a", 0.15)
+        
+        exemption_limit = 125000.0 if self.fy == "2025-26" else 100000.0
+        taxable_ltcg_112a = max(0.0, ltcg_listed - exemption_limit)
+        ltcg_listed_tax = taxable_ltcg_112a * rates_info.get("rate_112a", 0.10)
+        
+        ltcg_unlisted_tax = ltcg_unlisted * rates_info.get("rate_112", 0.125)
+        total_cg_tax = stcg_listed_tax + ltcg_listed_tax + ltcg_unlisted_tax
+        
+        vda_tax = vda_gains * 0.30
+        basic_tax = slab_tax + total_cg_tax + vda_tax
+        return basic_tax, slab_tax, total_cg_tax
+
+    def calculate_surcharge_with_relief(
+        self,
+        is_new: bool,
+        taxable_slab_income: float,
+        special_cg_income: float,
+        dividend_income: float,
+        basic_tax: float,
+        slab_tax: float,
+        cg_tax: float,
+        vda_income: float,
+        stcg_listed: float,
+        ltcg_listed: float,
+        ltcg_unlisted: float,
+        rates_info: dict
+    ) -> float:
+        # Standard surcharge
+        surcharge = self.calculate_surcharge(
+            is_new, taxable_slab_income, special_cg_income,
+            dividend_income, basic_tax, slab_tax, cg_tax, vda_income
+        )
+        
+        # Apply Surcharge Marginal Tax Relief
+        total_income = taxable_slab_income + special_cg_income + vda_income
+        if total_income > 5000000.0:
+            if total_income <= 10000000.0:
+                T = 5000000.0
+            elif total_income <= 20000000.0:
+                T = 10000000.0
+            elif total_income <= 50000000.0:
+                T = 20000000.0
+            else:
+                T = 50000000.0
+
+            # Compute components at threshold T
+            F = T / total_income
+            slab_inc_T = taxable_slab_income * F
+            stcg_l_T = stcg_listed * F
+            ltcg_l_T = ltcg_listed * F
+            ltcg_unl_T = ltcg_unlisted * F
+            vda_gains_T = vda_income * F
+            div_income_T = dividend_income * F
+            special_cg_inc_T = stcg_l_T + ltcg_l_T + ltcg_unl_T
+
+            # Compute basic tax components at T
+            basic_tax_T, slab_tax_T, total_cg_tax_T = self.compute_basic_tax_components(
+                is_new, slab_inc_T, stcg_l_T, ltcg_l_T, ltcg_unl_T, vda_gains_T, rates_info
+            )
+
+            # Compute surcharge at T
+            surcharge_T = self.calculate_surcharge(
+                is_new, slab_inc_T, special_cg_inc_T, div_income_T,
+                basic_tax_T, slab_tax_T, total_cg_tax_T, vda_gains_T
+            )
+
+            # Max allowed tax + surcharge = Tax(T) + Surcharge(T) + (total_income - T)
+            max_tax_surcharge = basic_tax_T + surcharge_T + (total_income - T)
+            
+            # Capped surcharge
+            surcharge_capped = max(0.0, max_tax_surcharge - basic_tax)
+            if surcharge > surcharge_capped:
+                surcharge = surcharge_capped
+                
+        return surcharge

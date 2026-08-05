@@ -134,5 +134,11 @@ class TestMutualFunds(unittest.TestCase):
         # Total Chapter VI-A deductions should sum to 2.0L
         self.assertEqual(old_regime["deductions"]["total"], 200000.0)
 
+        # New Regime deductions should be exactly 0
+        new_regime = res["regimes"]["new"]
+        self.assertEqual(new_regime["deductions"]["80C"], 0.0)
+        self.assertEqual(new_regime["deductions"]["80CCD_1B"], 0.0)
+        self.assertEqual(new_regime["deductions"]["total"], 0.0)
+
 if __name__ == "__main__":
     unittest.main()

@@ -82,13 +82,6 @@ class InterestCalculatorMixin:
         # regular_slab_income = slab income excluding unlisted STCG & US dividends & VDA slab
         regular_slab_income = max(0.0, taxable_slab_income - unlisted_stcg_annual - dividend_income)
         
-        # Calculate slab tax on regular income
-        slab_tax_regular, _ = self.calculate_slab_tax(regular_slab_income, is_new_regime)
-        surcharge_regular = self.calculate_surcharge(is_new_regime, regular_slab_income, 0.0, 0.0, slab_tax_regular, slab_tax_regular, 0.0)
-        cess_regular = (slab_tax_regular + surcharge_regular) * 0.04
-        tax_regular = slab_tax_regular + surcharge_regular + cess_regular
-        assessed_tax_regular = max(0.0, tax_regular - tds_credited)
-        
         # Resolve rates for special CG tax
         txs_111a = [t for t in (stock_sales or []) if t.get("section") == "Sec 111A"]
         rate_111a = txs_111a[0]["rate"] / 100.0 if txs_111a else (0.20 if self.fy == "2025-26" else 0.15)
@@ -100,6 +93,22 @@ class InterestCalculatorMixin:
         rate_112 = txs_112[0]["rate"] / 100.0 if txs_112 else 0.125
 
         exemption_limit = 125000.0 if self.fy == "2025-26" else 100000.0
+
+        # Calculate slab tax on regular income
+        slab_tax_regular, _ = self.calculate_slab_tax(regular_slab_income, is_new_regime)
+        surcharge_regular = self.calculate_surcharge_with_relief(
+            is_new_regime, regular_slab_income, 0.0, 0.0,
+            slab_tax_regular, slab_tax_regular, 0.0, 0.0,
+            0.0, 0.0, 0.0,
+            {
+                "rate_111a": rate_111a,
+                "rate_112a": rate_112a,
+                "rate_112": rate_112
+            }
+        )
+        cess_regular = (slab_tax_regular + surcharge_regular) * 0.04
+        tax_regular = slab_tax_regular + surcharge_regular + cess_regular
+        assessed_tax_regular = max(0.0, tax_regular - tds_credited)
 
         def calculate_tax_up_to(end_date):
             filtered_sales = [tx for tx in (stock_sales or []) if get_item_date(tx) and get_item_date(tx) <= end_date]
@@ -128,9 +137,15 @@ class InterestCalculatorMixin:
             
             basic_tax_D = slab_tax_D + special_cg_tax_D + vda_tax_D
             
-            surcharge_D = self.calculate_surcharge(
+            surcharge_D = self.calculate_surcharge_with_relief(
                 is_new_regime, slab_income_D, special_cg_income_D,
-                us_divs_D + dom_divs_D, basic_tax_D, slab_tax_D, special_cg_tax_D, vda_income_D
+                us_divs_D + dom_divs_D, basic_tax_D, slab_tax_D, special_cg_tax_D, vda_income_D,
+                net_cg_D["stcg_listed"], net_cg_D["ltcg_listed"], net_cg_D["ltcg_unlisted"],
+                {
+                    "rate_111a": rate_111a,
+                    "rate_112a": rate_112a,
+                    "rate_112": rate_112
+                }
             )
             
             cess_D = (basic_tax_D + surcharge_D) * 0.04

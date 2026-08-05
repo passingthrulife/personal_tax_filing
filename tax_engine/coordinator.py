@@ -23,6 +23,7 @@ class TaxCalculator(
     def set_fy(self, fy):
         self.fy = fy
 
+
     def compute_tax_liability(self, inputs: dict) -> dict:
         """
         Assembles all income sources, deductions, and computes tax
@@ -234,10 +235,18 @@ class TaxCalculator(
             
             basic_tax = slab_tax + total_cg_tax + vda_tax
             
-            surcharge = self.calculate_surcharge(
+            rates_info = {
+                "rate_111a": rate_111a,
+                "rate_112a": rate_112a,
+                "rate_112": rate_112
+            }
+            
+            surcharge = self.calculate_surcharge_with_relief(
                 is_new, taxable_slab_income, special_cg_income,
                 domestic_dividends + total_us_dividends_inr,
-                basic_tax, slab_tax, total_cg_tax, total_vda_gains
+                basic_tax, slab_tax, total_cg_tax, total_vda_gains,
+                net_cg["stcg_listed"], net_cg["ltcg_listed"], net_cg["ltcg_unlisted"],
+                rates_info
             )
             
             cess = (basic_tax + surcharge) * 0.04

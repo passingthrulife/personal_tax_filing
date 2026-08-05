@@ -124,5 +124,93 @@ class TestManualEntries(unittest.TestCase):
         self.assertAlmostEqual(raw_sales[0]["sell_price_inr"], 190.0 * sell_rate, places=2)
         self.assertAlmostEqual(raw_sales[0]["transfer_expenses"], 5.0 * sell_rate, places=2)
 
+    def test_marginal_relief_surcharge_new(self):
+        from tax_engine import TaxCalculator
+        calc = TaxCalculator(fy="2025-26")
+        
+        # Scenario: Salary = 49L, LTCG 112A = 2L
+        inputs = {
+            "form16": {
+                "gross_salary_17_1": 4900000.0,
+                "gross_salary_17_2": 0.0,
+                "gross_salary_17_3": 0.0,
+                "perquisites_value": 0.0,
+                "profits_in_lieu_of_salary": 0.0,
+                "allowances_exempt": 0.0,
+                "deductions_16": 0.0
+            },
+            "dob": "28051987", # Under 60 years old
+            "stock_sales": [
+                {
+                    "symbol": "TCS",
+                    "isin": "INE467B01029",
+                    "quantity": 100,
+                    "buy_date": "2020-04-10",
+                    "buy_price_inr": 1000.0,
+                    "sell_date": "2025-08-01",
+                    "sell_price_inr": 3000.0,
+                    "transfer_expenses": 0.0,
+                    "is_us": False,
+                    "asset_type": "stock"
+                }
+            ]
+        }
+        
+        res = calc.compute_tax_liability(inputs)
+        new_regime = res["regimes"]["new"]
+        
+        # Taxable Slab Income = 49L - 75k = 48.25L
+        # Total Income = 48.25L + 2L = 50.25L
+        # Without relief, surcharge is 10% of basic tax (~1,05,687.50).
+        # With marginal relief, surcharge is capped at ~17,676.
+        # Let's assert surcharge is capped and is less than 20,000.
+        self.assertTrue(new_regime["surcharge"] > 0)
+        self.assertLess(new_regime["surcharge"], 20000)
+        self.assertAlmostEqual(new_regime["surcharge"], 17676.61, delta=100.0)
+
+    def test_marginal_relief_surcharge_old(self):
+        from tax_engine import TaxCalculator
+        calc = TaxCalculator(fy="2025-26")
+        
+        # Scenario: Salary = 49L, LTCG 112A = 2L
+        inputs = {
+            "form16": {
+                "gross_salary_17_1": 4900000.0,
+                "gross_salary_17_2": 0.0,
+                "gross_salary_17_3": 0.0,
+                "perquisites_value": 0.0,
+                "profits_in_lieu_of_salary": 0.0,
+                "allowances_exempt": 0.0,
+                "deductions_16": 0.0
+            },
+            "dob": "28051987",
+            "stock_sales": [
+                {
+                    "symbol": "TCS",
+                    "isin": "INE467B01029",
+                    "quantity": 100,
+                    "buy_date": "2020-04-10",
+                    "buy_price_inr": 1000.0,
+                    "sell_date": "2025-08-01",
+                    "sell_price_inr": 3000.0,
+                    "transfer_expenses": 0.0,
+                    "is_us": False,
+                    "asset_type": "stock"
+                }
+            ]
+        }
+        
+        res = calc.compute_tax_liability(inputs)
+        old_regime = res["regimes"]["old"]
+        
+        # Taxable Slab Income = 49L - 50k = 48.50L
+        # Total Income = 48.50L + 2L = 50.50L
+        # Without relief, surcharge is 10% of basic tax (~1,27,687.50).
+        # With marginal relief, surcharge is capped at ~35,346.53.
+        # Let's assert surcharge is capped and is less than 40,000.
+        self.assertTrue(old_regime["surcharge"] > 0)
+        self.assertLess(old_regime["surcharge"], 40000)
+        self.assertAlmostEqual(old_regime["surcharge"], 35346.53, delta=100.0)
+
 if __name__ == "__main__":
     unittest.main()
