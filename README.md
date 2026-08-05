@@ -45,6 +45,7 @@ To run calculations, upload the following files via the dashboard:
 | **Form 16 Part B** | `.pdf` | Employer | Salary Section 17 breakdown and TDS credited |
 | **US Realization Report** | `.csv` | Schwab / Fidelity / Broker | Realized gain/loss details for US Stock capital gains |
 | **US Dividends Report** | `.csv` | Schwab / Fidelity / Broker | Foreign dividends received and tax withheld u/s 1042-S |
+| **Indian Stocks / MF Realization** | `.csv` / `.pdf` | Broker (Groww, Zerodha, HDFC Sec, etc.) | Realized gain/loss, grandfathered prices, and transaction dates for domestic stocks and mutual funds |
 | **CG Exemptions** *(Optional)* | `.json` | Pre-configured | Custom exemption amounts claimed under Section 54F/54EC |
 
 ---
