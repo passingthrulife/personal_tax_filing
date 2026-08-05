@@ -48,6 +48,8 @@ def process_tax():
     custom_80c = float(request.form.get("custom_80c", 0.0) or 0.0)
     custom_80d = float(request.form.get("custom_80d", 0.0) or 0.0)
     custom_80ccd_1b = float(request.form.get("custom_80ccd_1b", 0.0) or 0.0)
+    bf_stcl = float(request.form.get("bf_stcl", 0.0) or 0.0)
+    bf_ltcl = float(request.form.get("bf_ltcl", 0.0) or 0.0)
     
     advance_tax_override = request.form.get("advance_tax", None)
     if advance_tax_override == "":
@@ -591,6 +593,8 @@ def process_tax():
         "custom_80c": custom_80c,
         "custom_80d": custom_80d,
         "custom_80ccd_1b": custom_80ccd_1b,
+        "bf_stcl": bf_stcl,
+        "bf_ltcl": bf_ltcl,
         "advance_tax_paid": advance_tax_override if advance_tax_override is not None else parsed_data["ais"].get("advance_tax_paid", 0.0),
         "dob": dob,
         "hra_basic": hra_basic,

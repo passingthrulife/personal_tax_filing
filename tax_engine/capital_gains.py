@@ -4,7 +4,7 @@ from datetime import datetime, date
 logger = logging.getLogger(__name__)
 
 class CapitalGainsCalculatorMixin:
-    def calculate_capital_gains(self, stock_transactions: list) -> dict:
+    def calculate_capital_gains(self, stock_transactions: list, bf_stcl: float = 0.0, bf_ltcl: float = 0.0) -> dict:
         """
         Calculates capital gains and applies set-off rules.
         Separates into:
@@ -243,6 +243,69 @@ class CapitalGainsCalculatorMixin:
             cf_stcg_loss = remaining_stc_loss
         else:
             cf_stcg_loss = 0.0
+
+        # Set-off of brought-forward capital losses u/s 74
+        # 1. Brought-forward LTCL can be set off ONLY against current year LTCG
+        if bf_ltcl > 0:
+            remaining_bf_ltcl = bf_ltcl
+            # Set off against unlisted LTCG
+            if net_ltcg_unlisted >= remaining_bf_ltcl:
+                net_ltcg_unlisted -= remaining_bf_ltcl
+                remaining_bf_ltcl = 0.0
+            else:
+                remaining_bf_ltcl -= net_ltcg_unlisted
+                net_ltcg_unlisted = 0.0
+                
+            # Set off against listed LTCG
+            if remaining_bf_ltcl > 0:
+                if net_ltcg_listed >= remaining_bf_ltcl:
+                    net_ltcg_listed -= remaining_bf_ltcl
+                    remaining_bf_ltcl = 0.0
+                else:
+                    remaining_bf_ltcl -= net_ltcg_listed
+                    net_ltcg_listed = 0.0
+                    
+            cf_ltcg_loss += remaining_bf_ltcl
+
+        # 2. Brought-forward STCL can be set off against STCG and LTCG
+        if bf_stcl > 0:
+            remaining_bf_stcl = bf_stcl
+            # Set off against unlisted STCG
+            if net_stcg_unlisted >= remaining_bf_stcl:
+                net_stcg_unlisted -= remaining_bf_stcl
+                remaining_bf_stcl = 0.0
+            else:
+                remaining_bf_stcl -= net_stcg_unlisted
+                net_stcg_unlisted = 0.0
+                
+            # Set off against listed STCG
+            if remaining_bf_stcl > 0:
+                if net_stcg_listed >= remaining_bf_stcl:
+                    net_stcg_listed -= remaining_bf_stcl
+                    remaining_bf_stcl = 0.0
+                else:
+                    remaining_bf_stcl -= net_stcg_listed
+                    net_stcg_listed = 0.0
+                    
+            # Set off against unlisted LTCG
+            if remaining_bf_stcl > 0:
+                if net_ltcg_unlisted >= remaining_bf_stcl:
+                    net_ltcg_unlisted -= remaining_bf_stcl
+                    remaining_bf_stcl = 0.0
+                else:
+                    remaining_bf_stcl -= net_ltcg_unlisted
+                    net_ltcg_unlisted = 0.0
+                    
+            # Set off against listed LTCG
+            if remaining_bf_stcl > 0:
+                if net_ltcg_listed >= remaining_bf_stcl:
+                    net_ltcg_listed -= remaining_bf_stcl
+                    remaining_bf_stcl = 0.0
+                else:
+                    remaining_bf_stcl -= net_ltcg_listed
+                    net_ltcg_listed = 0.0
+                    
+            cf_stcg_loss += remaining_bf_stcl
 
         return {
             "transactions": processed_txs,

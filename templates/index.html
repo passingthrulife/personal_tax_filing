@@ -1368,6 +1368,18 @@
                                     <option value="true">Metro - Delhi/Mumbai/Kolkata/Chennai (50% limit)</option>
                                 </select>
                             </div>
+
+                            <!-- Group 4: Carried-Forward Capital Losses -->
+                            <div class="manual-input-section-title">Brought-Forward Capital Losses (Previous Years)</div>
+                            
+                            <div class="form-group">
+                                <label for="bf_stcl">Brought-Forward Short-Term Capital Loss (BF STCL)</label>
+                                <input type="number" id="bf_stcl" class="form-control" placeholder="e.g. 25000">
+                            </div>
+                            <div class="form-group">
+                                <label for="bf_ltcl">Brought-Forward Long-Term Capital Loss (BF LTCL)</label>
+                                <input type="number" id="bf_ltcl" class="form-control" placeholder="e.g. 40000">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3698,6 +3710,8 @@
             formData.append("hra_received", document.getElementById("hra_received").value);
             formData.append("hra_rent", document.getElementById("hra_rent").value);
             formData.append("hra_metro", document.getElementById("hra_metro").value);
+            formData.append("bf_stcl", document.getElementById("bf_stcl").value);
+            formData.append("bf_ltcl", document.getElementById("bf_ltcl").value);
 
             // Append files
             const f16 = document.getElementById("file_form16").files[0];

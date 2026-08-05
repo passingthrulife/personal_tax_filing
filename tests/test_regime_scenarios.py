@@ -220,5 +220,60 @@ class TestRegimeScenarios(unittest.TestCase):
         # Surcharge is capped appropriately: 49,23,230.77 instead of uncapped 52,75,625
         self.assertAlmostEqual(new_reg["surcharge"], 4923230.77, delta=100.0)
 
+    def test_carried_forward_losses_setoff(self):
+        calc = TaxCalculator(fy="2025-26")
+        
+        # Scenario: 
+        # - Current year gains:
+        #   - STCG listed = 50,000
+        #   - LTCG unlisted = 40,000
+        # - Brought-forward losses:
+        #   - bf_stcl = 30,000
+        #   - bf_ltcl = 60,000
+        # Expected results:
+        # - STCG listed: 50,000 - 30,000 = 20,000. Carry-forward STCL = 0.0
+        # - LTCG unlisted: 40,000 - 60,000 = 0.0. Carry-forward LTCL = 20,000
+        inputs = {
+            "dob": "01011990",
+            "bf_stcl": 30000.0,
+            "bf_ltcl": 60000.0,
+            "stock_sales": [
+                {
+                    "symbol": "TCS",
+                    "isin": "INE467B01029",
+                    "quantity": 50,
+                    "buy_date": "2025-05-10",
+                    "buy_price_inr": 2000.0,
+                    "sell_date": "2025-08-01",
+                    "sell_price_inr": 3000.0,
+                    "transfer_expenses": 0.0,
+                    "is_us": False,
+                    "asset_type": "stock" # STCG listed u/s 111a: 50 * 1000 = 50,000
+                },
+                {
+                    "symbol": "AAPL",
+                    "isin": "US0378331005",
+                    "quantity": 10,
+                    "buy_date": "2023-01-10",
+                    "buy_price": 120.0,
+                    "sell_price": 168.0,
+                    "buy_price_inr": 10000.0,
+                    "sell_date": "2025-08-01",
+                    "sell_price_inr": 14000.0,
+                    "transfer_expenses": 0.0,
+                    "is_us": True,
+                    "asset_type": "stock" # LTCG unlisted u/s 112: 10 * 4000 = 40,000
+                }
+            ]
+        }
+        res = calc.compute_tax_liability(inputs)
+        cg = res["capital_gains"]
+        net_cg = cg["net_gains"]
+        
+        self.assertEqual(net_cg["stcg_listed"], 20000.0)
+        self.assertEqual(net_cg["ltcg_unlisted"], 0.0)
+        self.assertEqual(net_cg["cf_stcg_loss"], 0.0)
+        self.assertEqual(net_cg["cf_ltcg_loss"], 20000.0)
+
 if __name__ == "__main__":
     unittest.main()

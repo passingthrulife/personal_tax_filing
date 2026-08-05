@@ -75,8 +75,11 @@ class InterestCalculatorMixin:
         else:
             tax_march = advance_tax_paid
 
+        bf_stcl = float(inputs.get("bf_stcl", 0.0) or 0.0) if inputs else 0.0
+        bf_ltcl = float(inputs.get("bf_ltcl", 0.0) or 0.0) if inputs else 0.0
+
         # Calculate annual unlisted STCG
-        annual_cg = self.calculate_capital_gains(stock_sales or [])
+        annual_cg = self.calculate_capital_gains(stock_sales or [], bf_stcl=bf_stcl, bf_ltcl=bf_ltcl)
         unlisted_stcg_annual = annual_cg["net_gains"]["stcg_unlisted"]
         
         # regular_slab_income = slab income excluding unlisted STCG & US dividends & VDA slab
@@ -115,7 +118,7 @@ class InterestCalculatorMixin:
             filtered_divs = [div for div in (us_dividends or []) if get_item_date(div) and get_item_date(div) <= end_date]
             filtered_vdas = [v for v in (inputs.get("vda_trades", []) if inputs else []) if get_item_date(v) and get_item_date(v) <= end_date]
             
-            cg_results_D = self.calculate_capital_gains(filtered_sales)
+            cg_results_D = self.calculate_capital_gains(filtered_sales, bf_stcl=bf_stcl, bf_ltcl=bf_ltcl)
             net_cg_D = cg_results_D["net_gains"]
             stcg_unlisted_D = net_cg_D["stcg_unlisted"]
             special_cg_income_D = net_cg_D["stcg_listed"] + net_cg_D["ltcg_listed"] + net_cg_D["ltcg_unlisted"]

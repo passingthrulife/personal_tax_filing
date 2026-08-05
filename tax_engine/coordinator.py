@@ -112,7 +112,9 @@ class TaxCalculator(
             tax_refund_interest
         )
 
-        cg_results = self.calculate_capital_gains(stock_sales)
+        bf_stcl = float(inputs.get("bf_stcl", 0.0) or 0.0)
+        bf_ltcl = float(inputs.get("bf_ltcl", 0.0) or 0.0)
+        cg_results = self.calculate_capital_gains(stock_sales, bf_stcl=bf_stcl, bf_ltcl=bf_ltcl)
         net_cg = cg_results["net_gains"]
 
         cg_exemptions = inputs.get("cg_exemptions", [])
