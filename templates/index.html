@@ -2485,7 +2485,92 @@
             let title = "";
             let html = "";
 
-            if (type === 'us-dividends') {
+            if (type === 'interest-ledger') {
+                title = "Advance Tax & Interest Ledger";
+                const optimal = globalProcessedData.results.optimal_regime;
+                const optR = globalProcessedData.results.regimes[optimal];
+                const ledger = optR.interest_ledger_234 || {};
+                const b = ledger.sec_234b || {};
+                const c_list = ledger.sec_234c || [];
+
+                html += `
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="color: #fff; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>📊</span> Section 234B Ledger - Default of Advance Tax
+                        </h4>
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 1rem; border-radius: 6px; font-size: 0.85rem; line-height: 1.6;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-secondary);">Final Assessed Tax (Net tax - TDS):</span>
+                                <span style="color: #fff; font-family: monospace; font-weight: 600;">${formatINR(b.assessed_tax || 0)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-secondary);">90% Threshold Required:</span>
+                                <span style="color: #fff; font-family: monospace; font-weight: 600;">${formatINR(b.threshold_90_pct || 0)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-secondary);">Total Advance Tax Paid:</span>
+                                <span style="color: #fff; font-family: monospace; font-weight: 600;">${formatINR(b.advance_tax_paid || 0)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.4rem;">
+                                <span style="color: var(--text-secondary);">Interest Triggered?</span>
+                                <span style="font-weight: 700; color: ${b.is_applicable ? 'var(--danger)' : 'var(--success)'};">
+                                    ${b.is_applicable ? 'Yes (Paid < 90%)' : 'No (Paid ≥ 90%)'}
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-secondary);">Assessed Shortfall (rounded down to nearest ₹100):</span>
+                                <span style="color: #fff; font-family: monospace; font-weight: 600;">${formatINR(b.shortfall || 0)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.4rem; color: var(--primary);">
+                                <span>Computed Interest u/s 234B (1% pm for 4 months):</span>
+                                <span style="font-family: monospace;">${formatINR(b.interest || 0)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #fff; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>📅</span> Section 234C Ledger - Deferment of Installments
+                        </h4>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.75rem; line-height: 1.4;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                    <th style="padding: 0.4rem 0.25rem;">Installment Due Date</th>
+                                    <th style="padding: 0.4rem 0.25rem; text-align: right;">Assessed Tax (Est.)</th>
+                                    <th style="padding: 0.4rem 0.25rem; text-align: right;">Target Pct</th>
+                                    <th style="padding: 0.4rem 0.25rem; text-align: right;">Required Cum.</th>
+                                    <th style="padding: 0.4rem 0.25rem; text-align: right;">Paid Cum.</th>
+                                    <th style="padding: 0.4rem 0.25rem; text-align: right;">Shortfall</th>
+                                    <th style="padding: 0.4rem 0.25rem; text-align: right;">Interest</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    let totalCInterest = 0;
+                    c_list.forEach(item => {
+                        totalCInterest += item.interest || 0;
+                        html += `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                <td style="padding: 0.4rem 0.25rem; font-weight: 600; color: #fff;">${item.due_date}</td>
+                                <td style="padding: 0.4rem 0.25rem; text-align: right; font-family: monospace;">${formatINR(item.assessed_tax)}</td>
+                                <td style="padding: 0.4rem 0.25rem; text-align: right;">${item.percentage} <small style="color: var(--text-secondary);">(buf: ${item.buffer_percentage})</small></td>
+                                <td style="padding: 0.4rem 0.25rem; text-align: right; font-family: monospace;">${formatINR(item.required_cumulative)}</td>
+                                <td style="padding: 0.4rem 0.25rem; text-align: right; font-family: monospace;">${formatINR(item.paid_cumulative)}</td>
+                                <td style="padding: 0.4rem 0.25rem; text-align: right; font-family: monospace; color: ${item.shortfall > 0 ? 'var(--danger)' : 'var(--text-secondary)'}; font-weight: 600;">${formatINR(item.shortfall)}</td>
+                                <td style="padding: 0.4rem 0.25rem; text-align: right; font-family: monospace; color: var(--primary); font-weight: 600;">${formatINR(item.interest)}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                            </tbody>
+                        </table>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 700; margin-top: 0.8rem; border-top: 1px solid var(--border-color); padding-top: 0.6rem; color: var(--primary);">
+                            <span>Total Computed Interest u/s 234C:</span>
+                            <span style="font-family: monospace;">${formatINR(totalCInterest)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'us-dividends') {
                 title = "US Dividends Breakdown";
                 const csvDivs = globalProcessedData.parsed_raw.us_dividends_csv || [];
                 const official1042s = globalProcessedData.parsed_raw.us_dividends_1042s || [];
@@ -3582,13 +3667,19 @@
                                 <td class="text-right font-mono">${formatINR(optR.net_tax_payable)}</td>
                             </tr>
                             <tr>
-                                <td>Add: Interest under Section 234B (Default of Advance Tax)</td>
+                                <td>
+                                    Add: Interest under Section 234B (Default of Advance Tax)
+                                    <button class="btn-info-inline" style="margin-left: 0.5rem; font-size: 0.7rem; padding: 0.15rem 0.4rem; background: rgba(99,102,241,0.15); border: 1px solid var(--primary); border-radius: 4px; color: #fff; cursor: pointer; display: inline-flex; align-items: center;" onclick="showBreakdown('interest-ledger')">View Ledger</button>
+                                </td>
                                 <td></td>
                                 <td class="text-right font-mono">${formatINR(optR.interest_234b)}</td>
                                 <td></td>
                             </tr>
                             <tr>
-                                <td>Add: Interest under Section 234C (Shortfall of Installments)</td>
+                                <td>
+                                    Add: Interest under Section 234C (Shortfall of Installments)
+                                    <button class="btn-info-inline" style="margin-left: 0.5rem; font-size: 0.7rem; padding: 0.15rem 0.4rem; background: rgba(99,102,241,0.15); border: 1px solid var(--primary); border-radius: 4px; color: #fff; cursor: pointer; display: inline-flex; align-items: center;" onclick="showBreakdown('interest-ledger')">View Ledger</button>
+                                </td>
                                 <td></td>
                                 <td class="text-right font-mono">${formatINR(optR.interest_234c)}</td>
                                 <td></td>
@@ -4063,8 +4154,19 @@
             compBody.innerHTML += makeCompRow("Total Tax Before Relief", "Basic tax + Surcharge + Cess", oldR.total_tax_before_relief, newR.total_tax_before_relief, optimal);
             compBody.innerHTML += makeCompRow("Less: Double Tax Relief (Sec 90)", "Foreign Tax Credit u/s DTAA for US dividends & interest", oldR.ftc_relief, newR.ftc_relief, optimal);
             compBody.innerHTML += makeCompRow("Net Tax Payable", "Tax liability after DTAA relief", oldR.net_tax_payable, newR.net_tax_payable, optimal);
-            compBody.innerHTML += makeCompRow("Add: Interest u/s 234B", "Interest for default in payment of advance tax", oldR.interest_234b || 0, newR.interest_234b || 0, optimal);
-            compBody.innerHTML += makeCompRow("Add: Interest u/s 234C", "Interest for deferment of advance tax", oldR.interest_234c || 0, newR.interest_234c || 0, optimal);
+            let row234B = makeCompRow("Add: Interest u/s 234B", "Interest for default in payment of advance tax", oldR.interest_234b || 0, newR.interest_234b || 0, optimal);
+            row234B = row234B.replace(
+                'Add: Interest u/s 234B</div>',
+                'Add: Interest u/s 234B <button class="btn-info-inline" style="margin-left: 0.4rem; font-size: 0.65rem; padding: 0.1rem 0.3rem; background: rgba(99,102,241,0.2); border: 1px solid var(--primary); border-radius: 3px; color: #fff; cursor: pointer;" onclick="showBreakdown(\'interest-ledger\')">View Ledger</button></div>'
+            );
+            compBody.innerHTML += row234B;
+
+            let row234C = makeCompRow("Add: Interest u/s 234C", "Interest for deferment of advance tax", oldR.interest_234c || 0, newR.interest_234c || 0, optimal);
+            row234C = row234C.replace(
+                'Add: Interest u/s 234C</div>',
+                'Add: Interest u/s 234C <button class="btn-info-inline" style="margin-left: 0.4rem; font-size: 0.65rem; padding: 0.1rem 0.3rem; background: rgba(99,102,241,0.2); border: 1px solid var(--primary); border-radius: 3px; color: #fff; cursor: pointer;" onclick="showBreakdown(\'interest-ledger\')">View Ledger</button></div>'
+            );
+            compBody.innerHTML += row234C;
             compBody.innerHTML += makeCompRow("Total Tax, Surcharge & Interest", "Total net tax liability + interest payable", oldR.total_tax_surcharge_interest || oldR.net_tax_payable, newR.total_tax_surcharge_interest || newR.net_tax_payable, optimal);
             compBody.innerHTML += makeCompRow("Less: TDS Deducted", "Tax deducted at source (Form 16 + EPFO TDS)", oldR.tds_credited, newR.tds_credited, optimal);
             compBody.innerHTML += makeCompRow("Less: Advance Tax Paid", "Advance tax paid during the financial year", oldR.advance_tax_paid, newR.advance_tax_paid, optimal);

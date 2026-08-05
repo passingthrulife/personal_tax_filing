@@ -148,6 +148,13 @@ class TestRegimeScenarios(unittest.TestCase):
         self.assertTrue(new_reg["interest_234b"] > 0)
         self.assertTrue(new_reg["interest_234c"] > 0)
         
+        # Verify interest ledger exists and contains expected keys
+        self.assertIn("interest_ledger_234", new_reg)
+        ledger = new_reg["interest_ledger_234"]
+        self.assertIn("sec_234b", ledger)
+        self.assertIn("sec_234c", ledger)
+        self.assertEqual(len(ledger["sec_234c"]), 4)
+        
         # Verify total tax, surcharge & interest ordering
         expected_total = new_reg["net_tax_payable"] + new_reg["interest_234b"] + new_reg["interest_234c"]
         self.assertAlmostEqual(new_reg["total_tax_surcharge_interest"], expected_total, places=2)

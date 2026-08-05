@@ -196,4 +196,58 @@ class InterestCalculatorMixin:
         interest_march = ((shortfall_march // 100) * 100) * 0.01
         
         interest_234c = interest_june + interest_sept + interest_dec + interest_march
-        return interest_234b, interest_234c
+
+        ledger_data = {
+            "sec_234b": {
+                "assessed_tax": round(assessed_tax, 2),
+                "threshold_90_pct": round(0.90 * assessed_tax, 2),
+                "advance_tax_paid": round(advance_tax_paid, 2),
+                "shortfall": round(max(0.0, assessed_tax - advance_tax_paid) if advance_tax_paid < 0.90 * assessed_tax else 0.0, 2),
+                "interest": round(interest_234b, 2),
+                "is_applicable": total_advance_paid < (0.90 * assessed_tax)
+            },
+            "sec_234c": [
+                {
+                    "due_date": "15th June",
+                    "percentage": "15%",
+                    "buffer_percentage": "12%",
+                    "assessed_tax": round(assessed_tax_june, 2),
+                    "required_cumulative": round(0.15 * assessed_tax_june, 2),
+                    "paid_cumulative": round(tax_june, 2),
+                    "shortfall": round(shortfall_june, 2),
+                    "interest": round(interest_june, 2)
+                },
+                {
+                    "due_date": "15th September",
+                    "percentage": "45%",
+                    "buffer_percentage": "36%",
+                    "assessed_tax": round(assessed_tax_sept, 2),
+                    "required_cumulative": round(0.45 * assessed_tax_sept, 2),
+                    "paid_cumulative": round(tax_sept, 2),
+                    "shortfall": round(shortfall_sept, 2),
+                    "interest": round(interest_sept, 2)
+                },
+                {
+                    "due_date": "15th December",
+                    "percentage": "75%",
+                    "buffer_percentage": "75%",
+                    "assessed_tax": round(assessed_tax_dec, 2),
+                    "required_cumulative": round(0.75 * assessed_tax_dec, 2),
+                    "paid_cumulative": round(tax_dec, 2),
+                    "shortfall": round(shortfall_dec, 2),
+                    "interest": round(interest_dec, 2)
+                },
+                {
+                    "due_date": "15th March",
+                    "percentage": "100%",
+                    "buffer_percentage": "100%",
+                    "assessed_tax": round(assessed_tax, 2),
+                    "required_cumulative": round(assessed_tax, 2),
+                    "paid_cumulative": round(tax_march, 2),
+                    "shortfall": round(shortfall_march, 2),
+                    "interest": round(interest_march, 2)
+                }
+            ]
+        }
+
+        return interest_234b, interest_234c, ledger_data

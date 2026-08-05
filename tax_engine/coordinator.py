@@ -269,7 +269,7 @@ class TaxCalculator(
             tds_deposits = float(ais.get("tds_on_deposit_interest", 0.0))
             total_tds = tds_employer + tds_epfo + tds_deposits
             
-            interest_234b, interest_234c = self.calculate_234_interest(
+            interest_234b, interest_234c, ledger_234 = self.calculate_234_interest(
                 net_tax_payable, total_tds, advance_tax_paid,
                 basic_tax, slab_tax, total_cg_tax, special_cg_income,
                 domestic_dividends + total_us_dividends_inr, taxable_slab_income, vda_tax,
@@ -330,6 +330,7 @@ class TaxCalculator(
                 "net_tax_payable": net_tax_payable,
                 "interest_234b": interest_234b,
                 "interest_234c": interest_234c,
+                "interest_ledger_234": ledger_234,
                 "total_tax_surcharge_interest": total_tax_surcharge_interest,
                 "tds_credited": total_tds,
                 "advance_tax_paid": advance_tax_paid,
