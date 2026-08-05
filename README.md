@@ -1,4 +1,4 @@
-# Aatmanirbhar Tax Calculator
+# Aatmanirbhar Tax Engine
 
 Aatmanirbhar Tax is a self-contained, automated personal income tax calculator built for Indian individual taxpayers with complex income portfolios. It is especially tailored for tech professionals and investors who receive foreign stock compensation (RSUs/ESPPs), claim Foreign Tax Credits (FTC) under Section 90, and manage multiple domestic interest and dividend sources.
 
