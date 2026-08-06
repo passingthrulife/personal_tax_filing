@@ -34,6 +34,8 @@ def download_sbi_pdf():
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     for url in SBI_PDF_URLS:
+        if not url.lower().startswith(('http://', 'https://')):
+            raise ValueError(f"Forbidden URL scheme: {url}")
         try:
             print(f"Attempting to download daily PDF from: {url}")
             req = urllib.request.Request(url, headers=headers)
@@ -163,6 +165,8 @@ def fallback_sync_from_community():
                     if row.get("DATE"):
                         local_dates.add(row["DATE"])
                         
+        if not remote_url.lower().startswith(('http://', 'https://')):
+            raise ValueError(f"Forbidden URL scheme: {remote_url}")
         try:
             req = urllib.request.Request(remote_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:

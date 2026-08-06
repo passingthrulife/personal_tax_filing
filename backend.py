@@ -25,9 +25,9 @@ def index():
     # Renders the single-page HTML template from the local templates folder
     try:
         return render_template("index.html")
-    except Exception as e:
-        logger.error(f"Failed to load frontend template: {e}")
-        return f"<h1>Error loading UI dashboard: {e}</h1>", 500
+    except Exception:
+        logger.error("Failed to load frontend template", exc_info=True)
+        return "<h1>Error loading UI dashboard. Please contact support.</h1>", 500
 
 @app.route("/api/process", methods=["POST"])
 def process_tax():
@@ -661,8 +661,8 @@ def process_tax():
             with open(cache_path, "w", encoding="utf-8") as f:
                 json.dump(response_data, f, default=date_serializer, indent=2)
             logger.info("Successfully cached calculation result locally.")
-        except Exception as cache_err:
-            logger.error(f"Error caching calculation result: {cache_err}")
+        except Exception:
+            logger.error("Error caching calculation result", exc_info=True)
             
         # Custom jsonify serializer since standard jsonify doesn't handle date objects
         return app.response_class(
@@ -670,11 +670,11 @@ def process_tax():
             status=200,
             mimetype='application/json'
         )
-    except Exception as e:
+    except Exception:
         logger.exception("Tax calculation error")
         return jsonify({
             "success": False,
-            "error": f"Failed to compute tax liability: {e}",
+            "error": "Failed to compute tax liability due to an internal server error.",
             "warnings": warnings
         }), 500
 

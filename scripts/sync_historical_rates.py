@@ -29,6 +29,9 @@ def sync_currency(currency):
                     local_data[row["DATE"]] = row
                     
     # 2. Fetch remote rows
+    if not remote_url.lower().startswith(('http://', 'https://')):
+        raise ValueError(f"Forbidden URL scheme: {remote_url}")
+        
     try:
         req = urllib.request.Request(
             remote_url, 
