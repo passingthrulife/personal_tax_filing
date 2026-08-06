@@ -345,8 +345,8 @@ class TaxCalculator(
 
         optimal_regime = "new" if results["new"]["net_tax_payable"] <= results["old"]["net_tax_payable"] else "old"
         
-        # Build Schedule FA rows
-        schedule_fa = self._generate_schedule_fa(stock_sales, us_dividends)
+        # Build Schedule FA rows from inputs (manual entries only)
+        schedule_fa = inputs.get("schedule_fa", [])
         
         return {
             "regimes": results,

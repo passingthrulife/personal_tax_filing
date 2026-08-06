@@ -521,9 +521,22 @@ def process_tax():
         except Exception as e:
             logger.error(f"Error parsing Schedule FA JSON: {e}")
 
-    if not schedule_fa:
-        # Fallback to automatic generation from cost basis stock sales & US dividends
-        schedule_fa = tax_calculator._generate_schedule_fa(parsed_data["stock_sales"], parsed_data["us_dividends"])
+    # No fallback: Do not derive values from statements automatically
+    # If the user did not provide any input for schedule_fa, but they have US stock transactions or US dividends, show a warning.
+    has_foreign_assets_indicator = False
+    
+    # Check if there are any US stock sales
+    for tx in parsed_data.get("stock_sales", []):
+        if tx.get("is_us"):
+            has_foreign_assets_indicator = True
+            break
+            
+    # Check if there are any US dividends
+    if not has_foreign_assets_indicator and parsed_data.get("us_dividends"):
+        has_foreign_assets_indicator = True
+        
+    if has_foreign_assets_indicator and not schedule_fa:
+        warnings.append("Warning: You have uploaded foreign stock realizations or foreign dividend data, but Schedule FA (Foreign Assets) is empty. Please declare all foreign assets in Schedule FA under the 'Manual Inputs & Overrides' tab.")
 
     parsed_data["schedule_fa"] = schedule_fa
 
